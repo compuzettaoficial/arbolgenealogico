@@ -5,933 +5,2060 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Árbol Genealógico Familiar</title>
     <style>
-        /* ===== RESET Y BASE ===== */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
-    color: #333;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: auto;
+        }
 
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
+        /* Login Styles */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-/* ===== HEADER ===== */
-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
+        .login-box {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
 
-header h1 {
-    color: white;
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-}
+        .login-box h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
 
-/* ===== MENSAJES ===== */
-.message {
-    padding: 1rem;
-    margin: 1rem 0;
-    border-radius: 8px;
-    font-weight: 500;
-    text-align: center;
-    animation: slideDown 0.3s ease-out;
-}
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
 
-.message.success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
 
-.message.error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
 
-.message.info {
-    background-color: #d1ecf1;
-    color: #0c5460;
-    border: 1px solid #bee5eb;
-}
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
 
-/* ===== SECCIÓN DE AUTENTICACIÓN ===== */
-.auth-section {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 60vh;
-}
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
 
-.auth-card {
-    background: white;
-    padding: 2.5rem;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    width: 100%;
-    max-width: 450px;
-}
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
 
-.auth-card h2 {
-    text-align: center;
-    margin-bottom: 2rem;
-    color: #4a5568;
-    font-size: 1.8rem;
-}
+        .login-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
 
-/* ===== FORMULARIOS ===== */
-.form-group {
-    margin-bottom: 1.5rem;
-}
+        .error-message {
+            color: #e74c3c;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
 
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: #4a5568;
-}
+        .success-message {
+            color: #27ae60;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(39, 174, 96, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
 
-.form-group input,
-.form-group select {
-    width: 100%;
-    padding: 0.8rem;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
+        /* Main App Styles */
+        .app-container {
+            display: none;
+        }
 
-.form-group input:focus,
-.form-group select:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
+        .container {
+            max-width: 100%;
+            padding: 20px;
+            min-height: 100vh;
+        }
 
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            color: white;
+            position: relative;
+        }
 
-/* ===== BOTONES ===== */
-button {
-    padding: 0.8rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: none;
-}
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
 
-button[type="submit"],
-.save-btn,
-.load-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
+        .family-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
 
-button[type="submit"]:hover,
-.save-btn:hover,
-.load-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
+        .family-id {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
 
-button[type="button"] {
-    background: #f7fafc;
-    color: #4a5568;
-    border: 2px solid #e2e8f0;
-}
+        .logout-btn {
+            padding: 8px 15px;
+            background: rgba(231, 76, 60, 0.8);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
 
-button[type="button"]:hover {
-    background: #edf2f7;
-    border-color: #cbd5e0;
-}
+        .logout-btn:hover {
+            background: rgba(231, 76, 60, 1);
+        }
 
-.logout-btn {
-    background: #fed7d7;
-    color: #c53030;
-    border: 2px solid #feb2b2;
-}
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
 
-.logout-btn:hover {
-    background: #feb2b2;
-}
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
 
-.delete-btn {
-    background: #fed7d7;
-    color: #c53030;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
-    border: 1px solid #feb2b2;
-}
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            background: linear-gradient(45deg, #2980b9, #3498db);
+        }
 
-.delete-btn:hover {
-    background: #feb2b2;
-}
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
 
-.add-btn {
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-    color: white;
-    width: 100%;
-}
+        .btn-secondary {
+            background: linear-gradient(45deg, #7f8c8d, #95a5a6);
+        }
 
-.add-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
-}
+        .btn-secondary:hover {
+            background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+        }
 
-.form-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-}
+        .btn-danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
 
-.form-actions button {
-    flex: 1;
-}
+        .btn-danger:hover {
+            background: linear-gradient(45deg, #c0392b, #e74c3c);
+        }
 
-/* ===== TEXTO DE AYUDA ===== */
-.help-text {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    background: #f7fafc;
-    border-radius: 8px;
-    border-left: 4px solid #667eea;
-}
+        .btn-success {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+        }
 
-.help-text p {
-    margin-bottom: 0.5rem;
-    color: #4a5568;
-}
+        .btn-success:hover {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+        }
 
-.help-text ul {
-    list-style: none;
-    padding-left: 1rem;
-}
+        .tree-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            min-height: 70vh;
+            position: relative;
+            overflow: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
 
-.help-text li {
-    color: #667eea;
-    font-weight: 500;
-    margin-bottom: 0.3rem;
-}
+        .tree-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 100%;
+            padding: 20px;
+        }
 
-.help-text li::before {
-    content: "👨‍👩‍👧‍👦 ";
-    margin-right: 0.5rem;
-}
+        .generation {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            margin: 30px 0;
+            position: relative;
+            width: 100%;
+            flex-wrap: wrap;
+        }
 
-/* ===== SECCIÓN DEL ÁRBOL ===== */
-.tree-section {
-    background: white;
-    border-radius: 15px;
-    padding: 2rem;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    margin-top: 2rem;
-}
+        .person-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 10px 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            min-width: 200px;
+            max-width: 250px;
+            border: 2px solid #ecf0f1;
+        }
 
-.tree-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
+        .person-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            border-color: #3498db;
+        }
 
-.tree-header h2 {
-    color: #4a5568;
-    font-size: 1.8rem;
-}
+        .person-card.selected {
+            border-color: #e74c3c;
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+        }
 
-.tree-actions {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
+        .person-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            overflow: hidden;
+            position: relative;
+        }
 
-/* ===== SECCIÓN AGREGAR MIEMBRO ===== */
-.add-member-section {
-    background: #f7fafc;
-    padding: 2rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    border: 2px solid #e2e8f0;
-}
+        .person-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
 
-.add-member-section h3 {
-    color: #4a5568;
-    margin-bottom: 1.5rem;
-    font-size: 1.4rem;
-}
+        .person-photo.empty {
+            border: 2px dashed #bdc3c7;
+            background: #ecf0f1;
+            color: #7f8c8d;
+            font-size: 1rem;
+            cursor: pointer;
+        }
 
-/* ===== ESTADÍSTICAS ===== */
-.stats-section {
-    margin-bottom: 2rem;
-}
+        .person-info h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            text-align: center;
+            word-wrap: break-word;
+        }
 
-.stat-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    text-align: center;
-    font-weight: 600;
-    font-size: 1.1rem;
-    display: inline-block;
-}
+        .person-info p {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            text-align: center;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
 
-/* ===== VISUALIZACIÓN DEL ÁRBOL ===== */
-.tree-display h3 {
-    color: #4a5568;
-    margin-bottom: 1.5rem;
-    font-size: 1.4rem;
-}
+        .person-actions {
+            display: none;
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            background: white;
+            border-radius: 50%;
+            padding: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10;
+        }
 
-.family-tree-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1rem;
-}
+        .person-card:hover .person-actions,
+        .person-card.selected .person-actions {
+            display: flex;
+            gap: 5px;
+        }
 
-.member-card {
-    background: white;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1.5rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
+        .action-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #3498db;
+            transition: color 0.3s ease;
+            padding: 2px;
+            border-radius: 3px;
+        }
 
-.member-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    border-color: #667eea;
-}
+        .action-btn:hover {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
 
-.member-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #f1f5f9;
-}
+        .add-person-btn {
+            width: 200px;
+            height: 200px;
+            border: 3px dashed #bdc3c7;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 15px;
+            color: #7f8c8d;
+        }
 
-.member-header h3 {
-    color: #2d3748;
-    font-size: 1.3rem;
-    margin: 0;
-}
+        .add-person-btn:hover {
+            border-color: #3498db;
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
 
-.member-info p {
-    margin-bottom: 0.5rem;
-    color: #4a5568;
-}
+        .add-person-btn i {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
 
-.member-info strong {
-    color: #2d3748;
-}
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
 
-.added-date {
-    font-size: 0.9rem;
-    color: #718096;
-    font-style: italic;
-    margin-top: 1rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid #e2e8f0;
-}
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90%;
+            overflow-y: auto;
+        }
 
-.no-members {
-    text-align: center;
-    padding: 3rem;
-    color: #718096;
-    background: #f7fafc;
-    border-radius: 12px;
-    border: 2px dashed #cbd5e0;
-}
+        .modal h2 {
+            margin-bottom: 25px;
+            color: #2c3e50;
+            text-align: center;
+        }
 
-.no-members p {
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-}
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
 
-/* ===== ANIMACIONES ===== */
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+        .photo-upload {
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
+        .photo-upload:hover,
+        .photo-upload.dragover {
+            border-color: #3498db;
+            background: rgba(52, 152, 219, 0.05);
+        }
 
-.member-card {
-    animation: fadeIn 0.3s ease-out;
-}
+        .photo-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 15px auto;
+            object-fit: cover;
+            display: none;
+        }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-    .container {
-        padding: 1rem;
-    }
-    
-    header h1 {
-        font-size: 2rem;
-    }
-    
-    .tree-header {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .tree-actions {
-        justify-content: center;
-    }
-    
-    .form-row {
-        grid-template-columns: 1fr;
-    }
-    
-    .form-actions {
-        flex-direction: column;
-    }
-    
-    .auth-card {
-        padding: 1.5rem;
-    }
-    
-    .family-tree-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .add-member-section {
-        padding: 1.5rem;
-    }
-}
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .btn-cancel {
+            background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+        }
+
+        .family-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255,255,255,0.2);
+            padding: 15px 25px;
+            border-radius: 15px;
+            text-align: center;
+            color: white;
+        }
+
+        .stat-item h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .sync-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: white;
+            transition: all 0.3s ease;
+            z-index: 200;
+        }
+
+        .sync-status.syncing {
+            background: #f39c12;
+        }
+
+        .sync-status.success {
+            background: #27ae60;
+        }
+
+        .sync-status.error {
+            background: #e74c3c;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .tree-container {
+                padding: 20px;
+            }
+            
+            .person-card {
+                min-width: 150px;
+                padding: 15px;
+            }
+            
+            .modal-content {
+                padding: 20px;
+                width: 95%;
+            }
+
+            .family-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .family-stats {
+                gap: 15px;
+            }
+
+            .stat-item {
+                padding: 10px 15px;
+            }
+
+            .generation {
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🌳 Árbol Genealógico Familiar</h1>
-            <div id="message" class="message" style="display: none;"></div>
-        </header>
-
-        <!-- Sección de Autenticación -->
-        <section id="auth-section" class="auth-section">
-            <div class="auth-card">
-                <h2>🔐 Acceso Familiar</h2>
-                <form id="auth-form">
-                    <div class="form-group">
-                        <label for="familyId">ID de Familia:</label>
-                        <input type="text" id="familyId" placeholder="familia_manrique" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Contraseña:</label>
-                        <input type="password" id="password" placeholder="Contraseña familiar" required>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit">Ingresar</button>
-                        <button type="button" onclick="testConnection()">Probar Conexión</button>
-                    </div>
-                </form>
-                <div class="help-text">
-                    <p>💡 <strong>Familias disponibles:</strong></p>
-                    <ul>
-                        <li>familia_manrique</li>
-                        <li>familia_garcia</li>
-                        <li>familia_lopez</li>
-                    </ul>
+    <!-- Login Screen -->
+    <div class="login-container" id="login-screen">
+        <div class="login-box">
+            <h1>🌳 Árbol Genealógico</h1>
+            <p style="margin-bottom: 30px; color: #7f8c8d;">Accede a tu historia familiar</p>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="family-id">ID de Familia</label>
+                    <input type="text" id="family-id" placeholder="ejemplo: familia_garcia" required autocomplete="username">
                 </div>
-            </div>
-        </section>
-
-        <!-- Sección del Árbol Genealógico -->
-        <section id="tree-section" class="tree-section" style="display: none;">
-            <div class="tree-header">
-                <h2>👨‍👩‍👧‍👦 Gestión del Árbol Familiar</h2>
-                <div class="tree-actions">
-                    <button onclick="saveTree()" class="save-btn">💾 Guardar</button>
-                    <button onclick="loadTree()" class="load-btn">📥 Cargar</button>
-                    <button onclick="logout()" class="logout-btn">🚪 Salir</button>
+                
+                <div class="form-group">
+                    <label for="family-password">Contraseña</label>
+                    <input type="password" id="family-password" placeholder="Contraseña familiar" required autocomplete="current-password">
                 </div>
+                
+                <button type="submit" class="login-btn" id="login-btn">
+                    Acceder
+                </button>
+            </form>
+            
+            <div class="error-message" id="error-message"></div>
+            <div class="success-message" id="success-message"></div>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1; text-align: center;">
+                <p style="font-size: 0.9rem; color: #7f8c8d;">
+                    ¿Primera vez? Usa: <strong>familia_manrique</strong> / <strong>miArbol2025!</strong>
+                </p>
             </div>
-
-            <!-- Formulario para agregar miembros -->
-            <div class="add-member-section">
-                <h3>➕ Agregar Nuevo Miembro</h3>
-                <form id="member-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="memberName">Nombre Completo:</label>
-                            <input type="text" id="memberName" placeholder="Nombre del familiar" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="memberRelation">Parentesco:</label>
-                            <select id="memberRelation">
-                                <option value="">Seleccionar parentesco</option>
-                                <option value="padre">Padre</option>
-                                <option value="madre">Madre</option>
-                                <option value="hijo">Hijo</option>
-                                <option value="hija">Hija</option>
-                                <option value="hermano">Hermano</option>
-                                <option value="hermana">Hermana</option>
-                                <option value="abuelo">Abuelo</option>
-                                <option value="abuela">Abuela</option>
-                                <option value="nieto">Nieto</option>
-                                <option value="nieta">Nieta</option>
-                                <option value="tio">Tío</option>
-                                <option value="tia">Tía</option>
-                                <option value="primo">Primo</option>
-                                <option value="prima">Prima</option>
-                                <option value="esposo">Esposo</option>
-                                <option value="esposa">Esposa</option>
-                                <option value="otro">Otro</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="memberBirth">Fecha de Nacimiento:</label>
-                            <input type="date" id="memberBirth">
-                        </div>
-                        <div class="form-group">
-                            <label for="memberNotes">Notas adicionales:</label>
-                            <input type="text" id="memberNotes" placeholder="Información adicional (opcional)">
-                        </div>
-                    </div>
-                    <button type="submit" class="add-btn">👤 Agregar Miembro</button>
-                </form>
-            </div>
-
-            <!-- Estadísticas -->
-            <div class="stats-section">
-                <div id="member-count" class="stat-card">Total de miembros: 0</div>
-            </div>
-
-            <!-- Visualización del árbol -->
-            <div class="tree-display">
-                <h3>🌳 Árbol Familiar</h3>
-                <div id="family-tree" class="family-tree-container">
-                    <!-- Los miembros se renderizan aquí dinámicamente -->
-                </div>
-            </div>
-        </section>
+        </div>
     </div>
-    <script>
+
+    <!-- Main Application -->
+    <div class="app-container" id="app-container">
+        <div class="sync-status" id="sync-status"></div>
+        
+        <div class="container">
+            <div class="header">
+                <h1>🌳 Árbol Genealógico Familiar</h1>
+                <div class="family-stats" id="family-stats">
+                    <div class="stat-item">
+                        <h3 id="total-members">0</h3>
+                        <p>Miembros</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3 id="total-generations">0</h3>
+                        <p>Generaciones</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3 id="total-connections">0</h3>
+                        <p>Conexiones</p>
+                    </div>
+                </div>
+                <div class="family-info">
+                    <div class="family-id">Familia: <span id="current-family-id"></span></div>
+                    <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" onclick="addPerson()">
+                    ➕ Agregar Persona
+                </button>
+                <button class="btn btn-secondary" onclick="saveTreeToCloud()" id="save-btn">
+                    💾 Guardar
+                </button>
+                <button class="btn btn-secondary" onclick="loadTreeFromCloud()" id="load-btn">
+                    📥 Cargar
+                </button>
+                <button class="btn btn-success" onclick="exportTree()">
+                    📄 Exportar
+                </button>
+                <button class="btn btn-secondary" onclick="importTree()">
+                    📂 Importar
+                </button>
+                <button class="btn btn-secondary" onclick="resetView()">
+                    🔄 Restablecer Vista
+                </button>
+            </div>
+
+            <div class="tree-container">
+                <div class="tree-view" id="tree-view">
+                    <div class="generation" id="generation-container">
+                        <div class="add-person-btn" onclick="addPerson()">
+                            <i>👤</i>
+                            <p>Agregar Primera Persona</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para agregar/editar persona -->
+    <div class="modal" id="person-modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Agregar Nueva Persona</h2>
+            
+            <form id="person-form" novalidate>
+                <div class="form-group">
+                    <label for="person-name">Nombre Completo *</label>
+                    <input type="text" id="person-name" required maxlength="100" placeholder="Ingresa el nombre completo">
+                </div>
+
+                <div class="form-group">
+                    <label for="person-birth">Fecha de Nacimiento</label>
+                    <input type="date" id="person-birth" max="">
+                </div>
+
+                <div class="form-group">
+                    <label for="person-death">Fecha de Fallecimiento</label>
+                    <input type="date" id="person-death" max="">
+                </div>
+
+                <div class="form-group">
+                    <label for="person-gender">Género</label>
+                    <select id="person-gender">
+                        <option value="male">Masculino</option>
+                        <option value="female">Femenino</option>
+                        <option value="other">Otro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="person-description">Descripción</label>
+                    <textarea id="person-description" placeholder="Información adicional, profesión, lugar de nacimiento, etc." maxlength="500"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Foto</label>
+                    <div class="photo-upload" id="photo-upload" onclick="document.getElementById('photo-input').click()">
+                        <p>📷 Hacer clic para subir foto</p>
+                        <p style="font-size: 0.8rem; color: #7f8c8d; margin-top: 10px;">
+                            Arrastra y suelta una imagen aquí<br>
+                            Máximo 5MB - JPG, PNG, GIF
+                        </p>
+                    </div>
+                    <input type="file" id="photo-input" accept="image/*" style="display: none;">
+                    <img id="photo-preview" class="photo-preview" alt="Vista previa de la foto">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-cancel" onclick="closeModal()">
+                        ❌ Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-success" id="save-person-btn">
+                        💾 Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para gestionar relaciones -->
+    <div class="modal" id="relationship-modal">
+        <div class="modal-content">
+            <h2>Gestionar Relaciones</h2>
+            <p>Persona: <strong id="relationship-person-name"></strong></p>
+            
+            <div class="form-group">
+                <label for="relationship-type">Tipo de Relación</label>
+                <select id="relationship-type">
+                    <option value="parent">Padre/Madre</option>
+                    <option value="child">Hijo/Hija</option>
+                    <option value="sibling">Hermano/Hermana</option>
+                    <option value="spouse">Esposo/Esposa</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="relationship-person-select">Seleccionar Persona</label>
+                <select id="relationship-person-select">
+                    <option value="">-- Seleccionar --</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-success" onclick="addRelationship()">
+                    ➕ Agregar Relación
+                </button>
+                <button type="button" class="btn btn-cancel" onclick="closeRelationshipModal()">
+                    ❌ Cerrar
+                </button>
+            </div>
+
+            <div id="current-relationships" style="margin-top: 20px;">
+                <h3>Relaciones Actuales</h3>
+                <div id="relationships-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación -->
+    <div class="modal" id="confirm-modal" style="display: none;">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2 id="confirm-title">Confirmar Acción</h2>
+            <p id="confirm-message">¿Estás seguro de que quieres realizar esta acción?</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeConfirmModal()">
+                    ❌ Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="confirm-btn" onclick="executeConfirmAction()">
+                    ✅ Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input oculto para importar archivos -->
+    <input type="file" id="import-input" accept=".json" style="display: none;">
+
+    <!-- PARTE 3: JavaScript va aquí -->
+<script>
         // Variables globales
         let familyTree = {};
         let currentFamilyId = '';
         let selectedPersonId = null;
         let editingPersonId = null;
+        let confirmCallback = null;
 
-        
-// ===== CONFIGURACIÓN =====
-const API_URL = 'https://script.google.com/macros/s/AKfycbwRq6NsMov7ypBvK7ZFfamSkkyNbExA7itYwcx4ZXm3w1rfC04yEkzJ3GkMprE3aXyq/exec'; // Reemplaza con tu URL
+        // Configuración de la API - CORREGIDA
+        const API_CONFIG = {
+            url: 'https://script.google.com/macros/s/AKfycbwRq6NsMov7ypBvK7ZFfamSkkyNbExA7itYwcx4ZXm3w1rfC04yEkzJ3GkMprE3aXyq/exec',
+            timeout: 30000
+        };
 
-// ===== VARIABLES GLOBALES =====
-let currentFamily = null;
-let currentPassword = null;
-let familyTree = {};
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Iniciando aplicación...');
+            checkAuthentication();
+            setupEventListeners();
+            setMaxDates();
+            startAutoSave();
+        });
 
-// ===== FUNCIONES DE COMUNICACIÓN CON BACKEND =====
-async function callBackend(data) {
-  try {
-    console.log('🚀 Enviando al backend:', data);
-    
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    console.log('✅ Respuesta del backend:', result);
-    return result;
-    
-  } catch (error) {
-    console.error('❌ Error en callBackend:', error);
-    return { 
-      success: false, 
-      message: `Error de conexión: ${error.message}` 
-    };
-  }
-}
-
-// ===== FUNCIONES DE AUTENTICACIÓN =====
-async function authenticate() {
-  const familyId = document.getElementById('familyId').value.trim();
-  const password = document.getElementById('password').value.trim();
-  
-  if (!familyId || !password) {
-    showMessage('❌ Por favor completa todos los campos', 'error');
-    return;
-  }
-  
-  showMessage('🔐 Autenticando...', 'info');
-  
-  try {
-    const result = await callBackend({
-      action: 'authenticate',
-      familyId: familyId,
-      password: password
-    });
-    
-    if (result.success) {
-      currentFamily = familyId;
-      currentPassword = password;
-      
-      showMessage('✅ Autenticación exitosa', 'success');
-      showSection('tree-section');
-      hideSection('auth-section');
-      
-      // Cargar árbol existente
-      await loadTree();
-      
-    } else {
-      showMessage(`❌ ${result.message}`, 'error');
-    }
-    
-  } catch (error) {
-    console.error('Error en authenticate:', error);
-    showMessage('🔗 Error de conexión: No se puede conectar al servidor. Verifica: 1. URL correcta 2. Apps Script desplegado 3. Permisos configurados', 'error');
-  }
-}
-
-// ===== FUNCIONES DE GESTIÓN DE ÁRBOLES =====
-async function saveTree() {
-  if (!currentFamily || !currentPassword) {
-    showMessage('❌ No hay sesión activa', 'error');
-    return;
-  }
-  
-  showMessage('💾 Guardando árbol...', 'info');
-  
-  try {
-    const result = await callBackend({
-      action: 'saveTree',
-      familyId: currentFamily,
-      password: currentPassword,
-      treeData: familyTree
-    });
-    
-    if (result.success) {
-      showMessage(`✅ Árbol guardado - ${result.data?.memberCount || 0} miembros`, 'success');
-    } else {
-      showMessage(`❌ Error guardando: ${result.message}`, 'error');
-    }
-    
-  } catch (error) {
-    console.error('Error en saveTree:', error);
-    showMessage('❌ Error guardando el árbol', 'error');
-  }
-}
-
-async function loadTree() {
-  if (!currentFamily || !currentPassword) {
-    showMessage('❌ No hay sesión activa', 'error');
-    return;
-  }
-  
-  showMessage('📥 Cargando árbol...', 'info');
-  
-  try {
-    const result = await callBackend({
-      action: 'loadTree',
-      familyId: currentFamily,
-      password: currentPassword
-    });
-    
-    if (result.success) {
-      familyTree = result.data?.treeData || {};
-      const memberCount = result.data?.memberCount || 0;
-      const lastUpdate = result.data?.lastUpdate;
-      
-      showMessage(`✅ Árbol cargado - ${memberCount} miembros`, 'success');
-      
-      if (lastUpdate) {
-        const date = new Date(lastUpdate).toLocaleString();
-        showMessage(`📅 Última actualización: ${date}`, 'info');
-      }
-      
-      renderTree();
-    } else {
-      showMessage(`❌ Error cargando: ${result.message}`, 'error');
-    }
-    
-  } catch (error) {
-    console.error('Error en loadTree:', error);
-    showMessage('❌ Error cargando el árbol', 'error');
-  }
-}
-
-// ===== FUNCIONES DE TEST =====
-async function testConnection() {
-  showMessage('🧪 Probando conexión...', 'info');
-  
-  try {
-    const result = await callBackend({
-      action: 'test'
-    });
-    
-    if (result.success) {
-      showMessage('✅ Conexión exitosa con el backend', 'success');
-      console.log('Test result:', result);
-    } else {
-      showMessage(`❌ Test falló: ${result.message}`, 'error');
-    }
-    
-  } catch (error) {
-    console.error('Error en testConnection:', error);
-    showMessage('❌ No se puede conectar al backend. Verifica la URL y configuración.', 'error');
-  }
-}
-
-// ===== FUNCIONES DE GESTIÓN DE MIEMBROS =====
-function addMember() {
-  const name = document.getElementById('memberName').value.trim();
-  const relation = document.getElementById('memberRelation').value;
-  const birth = document.getElementById('memberBirth').value;
-  const notes = document.getElementById('memberNotes').value.trim();
-  
-  if (!name) {
-    showMessage('❌ El nombre es obligatorio', 'error');
-    return;
-  }
-  
-  const memberId = generateId();
-  familyTree[memberId] = {
-    id: memberId,
-    name: name,
-    relation: relation,
-    birthDate: birth,
-    notes: notes,
-    addedDate: new Date().toISOString()
-  };
-  
-  // Limpiar formulario
-  document.getElementById('memberName').value = '';
-  document.getElementById('memberRelation').value = '';
-  document.getElementById('memberBirth').value = '';
-  document.getElementById('memberNotes').value = '';
-  
-  showMessage(`✅ ${name} agregado al árbol`, 'success');
-  renderTree();
-}
-
-function deleteMember(memberId) {
-  if (confirm('¿Estás seguro de eliminar este miembro?')) {
-    const memberName = familyTree[memberId]?.name || 'Miembro';
-    delete familyTree[memberId];
-    showMessage(`🗑️ ${memberName} eliminado`, 'info');
-    renderTree();
-  }
-}
-
-// ===== FUNCIONES DE RENDERIZADO =====
-function renderTree() {
-  const container = document.getElementById('family-tree');
-  
-  if (!container) {
-    console.error('No se encontró el contenedor family-tree');
-    return;
-  }
-  
-  const members = Object.values(familyTree);
-  
-  if (members.length === 0) {
-    container.innerHTML = `
-      <div class="no-members">
-        <p>🌱 No hay miembros en el árbol familiar</p>
-        <p>Agrega el primer miembro usando el formulario de arriba</p>
-      </div>
-    `;
-    return;
-  }
-  
-  container.innerHTML = members.map(member => `
-    <div class="member-card" data-id="${member.id}">
-      <div class="member-header">
-        <h3>${member.name}</h3>
-        <button onclick="deleteMember('${member.id}')" class="delete-btn">🗑️</button>
-      </div>
-      <div class="member-info">
-        <p><strong>Parentesco:</strong> ${member.relation || 'No especificado'}</p>
-        ${member.birthDate ? `<p><strong>Nacimiento:</strong> ${member.birthDate}</p>` : ''}
-        ${member.notes ? `<p><strong>Notas:</strong> ${member.notes}</p>` : ''}
-        <p class="added-date">Agregado: ${new Date(member.addedDate).toLocaleDateString()}</p>
-      </div>
-    </div>
-  `).join('');
-  
-  updateMemberCount();
-}
-
-// ===== FUNCIONES AUXILIARES =====
-function generateId() {
-  return 'member_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-}
-
-function showMessage(message, type = 'info') {
-  const messageDiv = document.getElementById('message');
-  if (!messageDiv) return;
-  
-  messageDiv.textContent = message;
-  messageDiv.className = `message ${type}`;
-  messageDiv.style.display = 'block';
-  
-  // Auto-ocultar después de 5 segundos para mensajes de éxito e info
-  if (type === 'success' || type === 'info') {
-    setTimeout(() => {
-      messageDiv.style.display = 'none';
-    }, 5000);
-  }
-}
-
-function showSection(sectionId) {
-  const section = document.getElementById(sectionId);
-  if (section) {
-    section.style.display = 'block';
-  }
-}
-
-function hideSection(sectionId) {
-  const section = document.getElementById(sectionId);
-  if (section) {
-    section.style.display = 'none';
-  }
-}
-
-function updateMemberCount() {
-  const count = Object.keys(familyTree).length;
-  const countElement = document.getElementById('member-count');
-  if (countElement) {
-    countElement.textContent = `Total de miembros: ${count}`;
-  }
-}
-
-function logout() {
-  if (confirm('¿Estás seguro de cerrar sesión?')) {
-    currentFamily = null;
-    currentPassword = null;
-    familyTree = {};
-    
-    showSection('auth-section');
-    hideSection('tree-section');
-    
-    // Limpiar formularios
-    document.getElementById('familyId').value = '';
-    document.getElementById('password').value = '';
-    
-    showMessage('👋 Sesión cerrada', 'info');
-    
-    // Limpiar el árbol renderizado
-    const container = document.getElementById('family-tree');
-    if (container) {
-      container.innerHTML = '';
-    }
-  }
-}
-
-// ===== EVENTOS Y INICIALIZACIÓN =====
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('🌳 Aplicación de Árbol Genealógico iniciada');
-  
-  // Verificar que la URL del API esté configurada
-  if (API_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUÍ') {
-    showMessage('⚠️ Configuración pendiente: Actualiza la URL del API en el script', 'error');
-  }
-  
-  // Event listeners para formularios
-  const authForm = document.getElementById('auth-form');
-  if (authForm) {
-    authForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      authenticate();
-    });
-  }
-  
-  const memberForm = document.getElementById('member-form');
-  if (memberForm) {
-    memberForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      addMember();
-    });
-  }
-  
-  // Manejar Enter en campos de texto
-  const inputs = document.querySelectorAll('input[type="text"], input[type="password"]');
-  inputs.forEach(input => {
-    input.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        if (input.closest('#auth-form')) {
-          authenticate();
-        } else if (input.closest('#member-form')) {
-          addMember();
+        function setMaxDates() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('person-birth').max = today;
+            document.getElementById('person-death').max = today;
         }
-      }
-    });
-  });
-  
-  console.log('✅ Event listeners configurados');
-});
 
-// ===== FUNCIONES GLOBALES PARA BOTONES HTML =====
-window.authenticate = authenticate;
-window.testConnection = testConnection;
-window.saveTree = saveTree;
-window.loadTree = loadTree;
-window.addMember = addMember;
-window.deleteMember = deleteMember;
-window.logout = logout;
+        function checkAuthentication() {
+            const savedFamily = JSON.parse(sessionStorage.getItem('familyAuth') || '{}');
+            if (savedFamily.familyId && savedFamily.authenticated) {
+                // Verificar que no haya expirado (24 horas)
+                const now = Date.now();
+                const elapsed = now - (savedFamily.timestamp || 0);
+                if (elapsed < 24 * 60 * 60 * 1000) {
+                    currentFamilyId = savedFamily.familyId;
+                    showApp();
+                    loadTreeFromCloud();
+                    return;
+                }
+            }
+            showLogin();
+        }
 
-        
-        function resetView() {
-            renderTree();
+        function setupEventListeners() {
+            // Login form
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+            
+            // Person form
+            document.getElementById('person-form').addEventListener('submit', handlePersonSave);
+            
+            // Photo upload
+            const photoInput = document.getElementById('photo-input');
+            const photoUpload = document.getElementById('photo-upload');
+            
+            photoInput.addEventListener('change', handlePhotoSelect);
+            
+            // Drag and drop para fotos
+            photoUpload.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                photoUpload.classList.add('dragover');
+            });
+            
+            photoUpload.addEventListener('dragleave', () => {
+                photoUpload.classList.remove('dragover');
+            });
+            
+            photoUpload.addEventListener('drop', (e) => {
+                e.preventDefault();
+                photoUpload.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handlePhotoFile(files[0]);
+                }
+            });
+
+            // Import file
+            document.getElementById('import-input').addEventListener('change', handleImportFile);
+
+            // Cerrar modales al hacer clic fuera
+            window.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal')) {
+                    if (e.target.id === 'person-modal') closeModal();
+                    if (e.target.id === 'relationship-modal') closeRelationshipModal();
+                    if (e.target.id === 'confirm-modal') closeConfirmModal();
+                }
+            });
+
+            // Validación en tiempo real
+            document.getElementById('person-birth').addEventListener('change', validateDates);
+            document.getElementById('person-death').addEventListener('change', validateDates);
+        }
+
+        // Autenticación
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const familyId = document.getElementById('family-id').value.trim();
+            const password = document.getElementById('family-password').value;
+            const loginBtn = document.getElementById('login-btn');
+            
+            if (!familyId || !password) {
+                showError('Por favor completa todos los campos');
+                return;
+            }
+            
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<div class="loading"></div> Verificando...';
+            hideMessages();
+            
+            try {
+                console.log('🔐 Autenticando:', familyId);
+                
+                const response = await fetch(API_CONFIG.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'authenticate',
+                        familyId: familyId,
+                        password: password
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('📝 Respuesta autenticación:', result);
+                
+                if (result.success) {
+                    currentFamilyId = familyId;
+                    
+                    // Guardar autenticación con timestamp
+                    sessionStorage.setItem('familyAuth', JSON.stringify({
+                        familyId: familyId,
+                        authenticated: true,
+                        timestamp: Date.now()
+                    }));
+                    
+                    // Guardar contraseña en memoria para operaciones posteriores
+                    sessionStorage.setItem('familyPassword', password);
+                    
+                    showSuccess('¡Acceso exitoso! Cargando árbol familiar...');
+                    
+                    setTimeout(() => {
+                        showApp();
+                        loadTreeFromCloud();
+                    }, 1500);
+                    
+                } else {
+                    showError(result.message || 'Credenciales incorrectas');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error de autenticación:', error);
+                showError('Error de conexión. Verifica tu internet e intenta nuevamente.');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = 'Acceder';
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('app-container').style.display = 'none';
+            document.getElementById('family-id').focus();
+        }
+
+        function showApp() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-container').style.display = 'block';
+            document.getElementById('current-family-id').textContent = currentFamilyId;
             updateStats();
         }
 
-        // Auto-guardado cada 5 minutos
-        setInterval(() => {
-            if (currentFamilyId && Object.keys(familyTree).length > 0) {
+        function logout() {
+            sessionStorage.removeItem('familyAuth');
+            sessionStorage.removeItem('familyPassword');
+            familyTree = {};
+            currentFamilyId = '';
+            selectedPersonId = null;
+            editingPersonId = null;
+            stopAutoSave();
+            showLogin();
+            showSyncStatus('success', '👋 Sesión cerrada');
+        }
+
+        function showError(message) {
+            const errorMsg = document.getElementById('error-message');
+            errorMsg.textContent = message;
+            errorMsg.style.display = 'block';
+            setTimeout(() => errorMsg.style.display = 'none', 5000);
+        }
+
+        function showSuccess(message) {
+            const successMsg = document.getElementById('success-message');
+            successMsg.textContent = message;
+            successMsg.style.display = 'block';
+            setTimeout(() => successMsg.style.display = 'none', 3000);
+        }
+
+        function hideMessages() {
+            document.getElementById('error-message').style.display = 'none';
+            document.getElementById('success-message').style.display = 'none';
+        }
+
+        // Gestión del árbol genealógico
+        function generatePersonId() {
+            return 'person_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function addPerson() {
+            editingPersonId = null;
+            document.getElementById('modal-title').textContent = 'Agregar Nueva Persona';
+            document.getElementById('person-form').reset();
+            document.getElementById('photo-preview').style.display = 'none';
+            resetPhotoUpload();
+            document.getElementById('person-modal').style.display = 'block';
+            document.getElementById('person-name').focus();
+        }
+
+        function editPerson(personId) {
+            const person = familyTree[personId];
+            if (!person) return;
+            
+            editingPersonId = personId;
+            document.getElementById('modal-title').textContent = 'Editar Persona';
+            
+            // Llenar formulario
+            document.getElementById('person-name').value = person.name || '';
+            document.getElementById('person-birth').value = person.birth || '';
+            document.getElementById('person-death').value = person.death || '';
+            document.getElementById('person-gender').value = person.gender || 'male';
+            document.getElementById('person-description').value = person.description || '';
+            
+            // Mostrar foto si existe
+            const photoPreview = document.getElementById('photo-preview');
+            if (person.photo) {
+                photoPreview.src = person.photo;
+                photoPreview.style.display = 'block';
+                updatePhotoUploadArea(true);
+            } else {
+                photoPreview.style.display = 'none';
+                resetPhotoUpload();
+            }
+            
+            validateDates();
+            document.getElementById('person-modal').style.display = 'block';
+            document.getElementById('person-name').focus();
+        }
+
+        async function handlePersonSave(e) {
+            e.preventDefault();
+            
+            const saveBtn = document.getElementById('save-person-btn');
+            const originalText = saveBtn.innerHTML;
+            
+            const formData = {
+                name: document.getElementById('person-name').value.trim(),
+                birth: document.getElementById('person-birth').value,
+                death: document.getElementById('person-death').value,
+                gender: document.getElementById('person-gender').value,
+                description: document.getElementById('person-description').value.trim(),
+                photo: document.getElementById('photo-preview').src || ''
+            };
+            
+            // Validaciones
+            const errors = validatePersonData(formData);
+            if (errors.length > 0) {
+                alert('Error en los datos:\n\n' + errors.join('\n'));
+                return;
+            }
+            
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<div class="loading"></div> Guardando...';
+            
+            try {
+                let personId;
+                if (editingPersonId) {
+                    personId = editingPersonId;
+                    // Actualizar persona existente
+                    Object.assign(familyTree[personId], formData);
+                } else {
+                    // Crear nueva persona
+                    personId = generatePersonId();
+                    familyTree[personId] = {
+                        id: personId,
+                        ...formData,
+                        parents: [],
+                        children: [],
+                        siblings: [],
+                        spouses: [],
+                        createdAt: new Date().toISOString()
+                    };
+                }
+                
+                familyTree[personId].updatedAt = new Date().toISOString();
+                
+                closeModal();
+                renderTree();
+                updateStats();
+                
+                // Auto-guardar en la nube
+                await saveTreeToCloud();
+                
+                showSyncStatus('success', '✅ Persona guardada correctamente');
+                
+            } catch (error) {
+                console.error('❌ Error guardando persona:', error);
+                showSyncStatus('error', '❌ Error al guardar');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+            }
+        }
+
+        function deletePerson(personId) {
+            const person = familyTree[personId];
+            if (!person) return;
+            
+            showConfirmModal(
+                'Eliminar Persona',
+                `¿Estás seguro de que quieres eliminar a "${person.name}"?\n\nEsta acción eliminará también todas sus relaciones y no se puede deshacer.`,
+                () => {
+                    // Remover todas las relaciones
+                    removeAllRelationsForPerson(personId);
+                    
+                    // Eliminar la persona
+                    delete familyTree[personId];
+                    
+                    // Limpiar selección si era la persona seleccionada
+                    if (selectedPersonId === personId) {
+                        selectedPersonId = null;
+                    }
+                    
+                    renderTree();
+                    updateStats();
+                    saveTreeToCloud();
+                    
+                    showSyncStatus('success', '✅ Persona eliminada');
+                }
+            );
+        }
+
+        function removeAllRelationsForPerson(personId) {
+            Object.values(familyTree).forEach(person => {
+                if (person.parents) person.parents = person.parents.filter(id => id !== personId);
+                if (person.children) person.children = person.children.filter(id => id !== personId);
+                if (person.siblings) person.siblings = person.siblings.filter(id => id !== personId);
+                if (person.spouses) person.spouses = person.spouses.filter(id => id !== personId);
+            });
+        }
+
+        // Gestión de relaciones
+        function manageRelationships(personId) {
+            const person = familyTree[personId];
+            if (!person) return;
+            
+            selectedPersonId = personId;
+            document.getElementById('relationship-person-name').textContent = person.name;
+            
+            // Llenar select con otras personas
+            const select = document.getElementById('relationship-person-select');
+            select.innerHTML = '<option value="">-- Seleccionar --</option>';
+            
+            Object.values(familyTree).forEach(p => {
+                if (p.id !== personId) {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name;
+                    select.appendChild(option);
+                }
+            });
+            
+            updateRelationshipsList();
+            document.getElementById('relationship-modal').style.display = 'block';
+        }
+
+        function addRelationship() {
+            const type = document.getElementById('relationship-type').value;
+            const relatedPersonId = document.getElementById('relationship-person-select').value;
+            
+            if (!type || !relatedPersonId || !selectedPersonId) {
+                alert('Por favor selecciona un tipo de relación y una persona');
+                return;
+            }
+            
+            const person1 = familyTree[selectedPersonId];
+            const person2 = familyTree[relatedPersonId];
+            
+            if (!person1 || !person2) return;
+            
+            // Evitar relaciones duplicadas
+            if (isRelationshipExists(selectedPersonId, relatedPersonId, type)) {
+                alert('Esta relación ya existe');
+                return;
+            }
+            
+            // Validar relaciones lógicas
+            const validationError = validateRelationship(selectedPersonId, relatedPersonId, type);
+            if (validationError) {
+                alert(validationError);
+                return;
+            }
+            
+            // Agregar relación bidireccional
+            switch (type) {
+                case 'parent':
+                    if (!person1.children) person1.children = [];
+                    if (!person2.parents) person2.parents = [];
+                    person1.children.push(relatedPersonId);
+                    person2.parents.push(selectedPersonId);
+                    break;
+                case 'child':
+                    if (!person1.parents) person1.parents = [];
+                    if (!person2.children) person2.children = [];
+                    person1.parents.push(relatedPersonId);
+                    person2.children.push(selectedPersonId);
+                    break;
+                case 'sibling':
+                    if (!person1.siblings) person1.siblings = [];
+                    if (!person2.siblings) person2.siblings = [];
+                    person1.siblings.push(relatedPersonId);
+                    person2.siblings.push(selectedPersonId);
+                    break;
+                case 'spouse':
+                    if (!person1.spouses) person1.spouses = [];
+                    if (!person2.spouses) person2.spouses = [];
+                    person1.spouses.push(relatedPersonId);
+                    person2.spouses.push(selectedPersonId);
+                    break;
+            }
+            
+            updateRelationshipsList();
+            renderTree();
+            updateStats();
+            saveTreeToCloud();
+            
+            // Limpiar selección
+            document.getElementById('relationship-person-select').value = '';
+            
+            showSyncStatus('success', '✅ Relación agregada');
+        }
+
+        function validateRelationship(personId1, personId2, type) {
+            // Validaciones básicas para evitar relaciones imposibles
+            const person1 = familyTree[personId1];
+            const person2 = familyTree[personId2];
+            
+            // No permitir auto-relaciones
+            if (personId1 === personId2) {
+                return 'Una persona no puede tener una relación consigo misma';
+            }
+            
+            // Validaciones específicas por tipo
+            switch (type) {
+                case 'parent':
+                case 'child':
+                    // Verificar que no sea ya padre/hijo en dirección opuesta
+                    if (person1.parents && person1.parents.includes(personId2)) {
+                        return 'Esta persona ya es padre/madre de la seleccionada';
+                    }
+                    if (person1.children && person1.children.includes(personId2)) {
+                        return 'Esta persona ya es hijo/hija de la seleccionada';
+                    }
+                    break;
+                    
+                case 'sibling':
+                    // Verificar que no sean padre/hijo
+                    if ((person1.parents && person1.parents.includes(personId2)) ||
+                        (person1.children && person1.children.includes(personId2))) {
+                        return 'No se puede agregar como hermano a alguien que ya es padre/hijo';
+                    }
+                    break;
+            }
+            
+            return null; // Sin errores
+        }
+
+        function isRelationshipExists(personId1, personId2, type) {
+            const person1 = familyTree[personId1];
+            if (!person1) return false;
+            
+            switch (type) {
+                case 'parent':
+                    return person1.children && person1.children.includes(personId2);
+                case 'child':
+                    return person1.parents && person1.parents.includes(personId2);
+                case 'sibling':
+                    return person1.siblings && person1.siblings.includes(personId2);
+                case 'spouse':
+                    return person1.spouses && person1.spouses.includes(personId2);
+                default:
+                    return false;
+            }
+        }
+
+        function removeRelationship(personId1, personId2, type) {
+            showConfirmModal(
+                'Eliminar Relación',
+                '¿Estás seguro de que quieres eliminar esta relación?',
+                () => {
+                    const person1 = familyTree[personId1];
+                    const person2 = familyTree[personId2];
+                    
+                    if (!person1 || !person2) return;
+                    
+                    // Remover relación bidireccional
+                    switch (type) {
+                        case 'parent':
+                            if (person1.children) person1.children = person1.children.filter(id => id !== personId2);
+                            if (person2.parents) person2.parents = person2.parents.filter(id => id !== personId1);
+                            break;
+                        case 'child':
+                            if (person1.parents) person1.parents = person1.parents.filter(id => id !== personId2);
+                            if (person2.children) person2.children = person2.children.filter(id => id !== personId1);
+                            break;
+                        case 'sibling':
+                            if (person1.siblings) person1.siblings = person1.siblings.filter(id => id !== personId2);
+                            if (person2.siblings) person2.siblings = person2.siblings.filter(id => id !== personId1);
+                            break;
+                        case 'spouse':
+                            if (person1.spouses) person1.spouses = person1.spouses.filter(id => id !== personId2);
+                            if (person2.spouses) person2.spouses = person2.spouses.filter(id => id !== personId1);
+                            break;
+                    }
+                    
+                    updateRelationshipsList();
+                    renderTree();
+                    updateStats();
+                    saveTreeToCloud();
+                    
+                    showSyncStatus('success', '✅ Relación eliminada');
+                }
+            );
+        }
+
+        function updateRelationshipsList() {
+            if (!selectedPersonId) return;
+            
+            const person = familyTree[selectedPersonId];
+            const container = document.getElementById('relationships-list');
+            container.innerHTML = '';
+            
+            const relationshipTypes = [
+                { key: 'parents', label: 'Padres', type: 'parent' },
+                { key: 'children', label: 'Hijos', type: 'child' },
+                { key: 'siblings', label: 'Hermanos', type: 'sibling' },
+                { key: 'spouses', label: 'Cónyuges', type: 'spouse' }
+            ];
+            
+            relationshipTypes.forEach(relType => {
+                if (person[relType.key] && person[relType.key].length > 0) {
+                    const section = document.createElement('div');
+                    section.style.marginBottom = '15px';
+                    
+                    const title = document.createElement('h4');
+                    title.textContent = relType.label;
+                    title.style.marginBottom = '5px';
+                    title.style.color = '#2c3e50';
+                    section.appendChild(title);
+                    
+                    person[relType.key].forEach(relatedId => {
+                        const relatedPerson = familyTree[relatedId];
+                        if (relatedPerson) {
+                            const item = document.createElement('div');
+                            item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f8f9fa; margin-bottom: 5px; border-radius: 5px; border-left: 3px solid #3498db;';
+                            
+                            item.innerHTML = `
+                                <span style="font-weight: 500;">${relatedPerson.name}</span>
+                                <button onclick="removeRelationship('${selectedPersonId}', '${relatedId}', '${relType.type}')" 
+                                        style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.8rem;"
+                                        title="Eliminar relación">
+                                    ✕
+                                </button>
+                            `;
+                            
+                            section.appendChild(item);
+                        }
+                    });
+                    
+                    container.appendChild(section);
+                }
+            });
+            
+            if (container.innerHTML === '') {
+                container.innerHTML = '<p style="color: #7f8c8d; font-style: italic; text-align: center; padding: 20px;">No hay relaciones establecidas</p>';
+            }
+        }
+
+        // Renderizado del árbol
+        function renderTree() {
+            const container = document.getElementById('tree-view');
+            
+            if (Object.keys(familyTree).length === 0) {
+                container.innerHTML = `
+                    <div class="generation">
+                        <div class="add-person-btn" onclick="addPerson()">
+                            <i>👤</i>
+                            <p>Agregar Primera Persona</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                // Organizar personas por generaciones
+                const generations = organizeByGenerations();
+                
+                container.innerHTML = '';
+                
+                // Renderizar cada generación
+                Array.from(generations.entries())
+                    .sort(([a], [b]) => a - b) // Ordenar por nivel
+                    .forEach(([level, generation]) => {
+                        if (generation.length > 0) {
+                            const genDiv = document.createElement('div');
+                            genDiv.className = 'generation';
+                            genDiv.style.order = level;
+                            
+                            generation.forEach(personId => {
+                                const personCard = createPersonCard(familyTree[personId]);
+                                genDiv.appendChild(personCard);
+                            });
+                            
+                            container.appendChild(genDiv);
+                        }
+                    });
+                
+                // Agregar botón para nueva persona
+                const addGenDiv = document.createElement('div');
+                addGenDiv.className = 'generation';
+                addGenDiv.innerHTML = `
+                    <div class="add-person-btn" onclick="addPerson()">
+                        <i>➕</i>
+                        <p>Agregar Persona</p>
+                    </div>
+                `;
+                container.appendChild(addGenDiv);
+                
+            } catch (error) {
+                console.error('❌ Error renderizando árbol:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; color: #e74c3c; padding: 40px;">
+                        <h3>Error al mostrar el árbol</h3>
+                        <p>Intenta recargar la página</p>
+                        <button class="btn" onclick="location.reload()">🔄 Recargar</button>
+                    </div>
+                `;
+            }
+        }
+
+        function organizeByGenerations() {
+            const generations = new Map();
+            const visited = new Set();
+            const processing = new Set();
+            
+            // Encontrar personas sin padres (raíces)
+            const roots = Object.values(familyTree).filter(person => 
+                !person.parents || person.parents.length === 0
+            );
+            
+            function assignLevel(personId, level) {
+                // Evitar ciclos infinitos
+                if (processing.has(personId)) {
+                    console.warn('Ciclo detectado en:', personId);
+                    return;
+                }
+                
+                if (visited.has(personId)) return;
+                
+                processing.add(personId);
+                visited.add(personId);
+                
+                if (!generations.has(level)) {
+                    generations.set(level, []);
+                }
+                generations.get(level).push(personId);
+                
+                const person = familyTree[personId];
+                if (person && person.children) {
+                    person.children.forEach(childId => {
+                        if (familyTree[childId]) {
+                            assignLevel(childId, level + 1);
+                        }
+                    });
+                }
+                
+                processing.delete(personId);
+            }
+            
+            // Asignar niveles comenzando desde las raíces
+            if (roots.length > 0) {
+                roots.forEach(root => assignLevel(root.id, 0));
+            }
+            
+            // Asignar personas restantes (en caso de personas aisladas)
+            Object.keys(familyTree).forEach(personId => {
+                if (!visited.has(personId)) {
+                    assignLevel(personId, 0);
+                }
+            });
+            
+            return generations;
+        }
+
+        function createPersonCard(person) {
+            const card = document.createElement('div');
+            card.className = 'person-card';
+            card.onclick = () => selectPerson(person.id);
+            
+            const photoInitial = person.name ? person.name.charAt(0).toUpperCase() : '?';
+            const photoElement = person.photo && person.photo !== window.location.href ? 
+                `<img src="${person.photo}" alt="${person.name}" onerror="this.style.display='none'; this.nextSibling.style.display='flex';">
+                 <div class="person-photo empty" style="display:none;">${photoInitial}</div>` :
+                `<div class="person-photo empty">${photoInitial}</div>`;
+            
+            const birthYear = person.birth ? new Date(person.birth).getFullYear() : '';
+            const deathYear = person.death ? new Date(person.death).getFullYear() : '';
+            const yearsText = birthYear || deathYear ? `(${birthYear}${deathYear ? ` - ${deathYear}` : ''})` : '';
+            
+            const age = calculateAge(person.birth, person.death);
+            const ageText = age !== null ? ` - ${age} años` : '';
+            
+            card.innerHTML = `
+                <div class="person-actions">
+                    <button class="action-btn" onclick="event.stopPropagation(); editPerson('${person.id}')" title="Editar">
+                        ✏️
+                    </button>
+                    <button class="action-btn" onclick="event.stopPropagation(); manageRelationships('${person.id}')" title="Relaciones">
+                        🔗
+                    </button>
+                    <button class="action-btn" onclick="event.stopPropagation(); deletePerson('${person.id}')" title="Eliminar">
+                        🗑️
+                    </button>
+                </div>
+                <div class="person-photo">
+                    ${photoElement}
+                </div>
+                <div class="person-info">
+                    <h3>${person.name || 'Sin nombre'}</h3>
+                    <p>${yearsText}${ageText}</p>
+                    ${person.description ? `<p style="margin-top: 8px; font-size: 0.8rem; font-style: italic;">${person.description}</p>` : ''}
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function selectPerson(personId) {
+            // Remover selección anterior
+            document.querySelectorAll('.person-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Seleccionar nueva persona
+            event.currentTarget.classList.add('selected');
+            selectedPersonId = personId;
+        }
+
+        // Manejo de fotos
+        function handlePhotoSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handlePhotoFile(file);
+            }
+        }
+
+        function handlePhotoFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Por favor selecciona un archivo de imagen válido (JPG, PNG, GIF)');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) { // 5MB límite
+                alert('La imagen es demasiado grande. Máximo 5MB');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const photoPreview = document.getElementById('photo-preview');
+                photoPreview.src = e.target.result;
+                photoPreview.style.display = 'block';
+                updatePhotoUploadArea(true);
+            };
+            reader.onerror = function() {
+                alert('Error al cargar la imagen');
+            };
+            reader.readAsDataURL(file);
+        }
+
+
+function resetPhotoUpload() {
+            const uploadArea = document.getElementById('photo-upload');
+            uploadArea.innerHTML = `
+                <p>📷 Hacer clic para subir foto</p>
+                <p style="font-size: 0.8rem; color: #7f8c8d; margin-top: 10px;">
+                    Arrastra y suelta una imagen aquí<br>
+                    Máximo 5MB - JPG, PNG, GIF
+                </p>
+            `;
+            document.getElementById('photo-input').value = '';
+        }
+
+        function updatePhotoUploadArea(hasPhoto) {
+            const uploadArea = document.getElementById('photo-upload');
+            if (hasPhoto) {
+                uploadArea.innerHTML = `
+                    <p>📷 Foto cargada - Clic para cambiar</p>
+                    <p style="font-size: 0.8rem; color: #7f8c8d; margin-top: 10px;">
+                        Arrastra una nueva imagen para reemplazar
+                    </p>
+                `;
+            } else {
+                resetPhotoUpload();
+            }
+        }
+
+        // Validaciones
+        function validatePersonData(data) {
+            const errors = [];
+            
+            if (!data.name || data.name.trim().length === 0) {
+                errors.push('El nombre es obligatorio');
+            }
+            
+            if (data.name && data.name.length > 100) {
+                errors.push('El nombre no puede exceder 100 caracteres');
+            }
+            
+            if (data.description && data.description.length > 500) {
+                errors.push('La descripción no puede exceder 500 caracteres');
+            }
+            
+            if (data.birth && data.death) {
+                const birthDate = new Date(data.birth);
+                const deathDate = new Date(data.death);
+                if (deathDate <= birthDate) {
+                    errors.push('La fecha de fallecimiento debe ser posterior a la fecha de nacimiento');
+                }
+            }
+            
+            return errors;
+        }
+
+        function validateDates() {
+            const birthInput = document.getElementById('person-birth');
+            const deathInput = document.getElementById('person-death');
+            
+            if (birthInput.value && deathInput.value) {
+                const birthDate = new Date(birthInput.value);
+                const deathDate = new Date(deathInput.value);
+                
+                if (deathDate <= birthDate) {
+                    deathInput.setCustomValidity('La fecha de fallecimiento debe ser posterior al nacimiento');
+                } else {
+                    deathInput.setCustomValidity('');
+                }
+            } else {
+                deathInput.setCustomValidity('');
+            }
+        }
+
+        function calculateAge(birthDate, deathDate) {
+            if (!birthDate) return null;
+            
+            const birth = new Date(birthDate);
+            const end = deathDate ? new Date(deathDate) : new Date();
+            
+            let age = end.getFullYear() - birth.getFullYear();
+            const monthDiff = end.getMonth() - birth.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && end.getDate() < birth.getDate())) {
+                age--;
+            }
+            
+            return age >= 0 ? age : null;
+        }
+
+        // Gestión de la nube
+        async function saveTreeToCloud() {
+            if (!currentFamilyId) {
+                showSyncStatus('error', '❌ No hay sesión activa');
+                return;
+            }
+
+            const saveBtn = document.getElementById('save-btn');
+            const originalText = saveBtn.innerHTML;
+            
+            try {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<div class="loading"></div> Guardando...';
+                showSyncStatus('syncing', '☁️ Guardando en la nube...');
+                
+                const password = sessionStorage.getItem('familyPassword');
+                if (!password) {
+                    throw new Error('Sesión expirada');
+                }
+                
+                console.log('💾 Guardando árbol en la nube...');
+                
+                const response = await fetch(API_CONFIG.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'saveTree',
+                        familyId: currentFamilyId,
+                        password: password,
+                        treeData: familyTree
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('📝 Respuesta guardar:', result);
+                
+                if (result.success) {
+                    showSyncStatus('success', '✅ Guardado en la nube');
+                    console.log('✅ Árbol guardado exitosamente');
+                } else {
+                    throw new Error(result.message || 'Error desconocido');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error guardando en la nube:', error);
+                showSyncStatus('error', '❌ Error al guardar');
+                
+                if (error.message.includes('expirada')) {
+                    setTimeout(() => {
+                        alert('Tu sesión ha expirado. Serás redirigido al login.');
+                        logout();
+                    }, 2000);
+                }
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+            }
+        }
+
+        async function loadTreeFromCloud() {
+            if (!currentFamilyId) {
+                console.log('❌ No hay sesión activa para cargar');
+                return;
+            }
+
+            const loadBtn = document.getElementById('load-btn');
+            const originalText = loadBtn.innerHTML;
+            
+            try {
+                loadBtn.disabled = true;
+                loadBtn.innerHTML = '<div class="loading"></div> Cargando...';
+                showSyncStatus('syncing', '☁️ Cargando desde la nube...');
+                
+                const password = sessionStorage.getItem('familyPassword');
+                if (!password) {
+                    throw new Error('Sesión expirada');
+                }
+                
+                console.log('📥 Cargando árbol desde la nube...');
+                
+                const response = await fetch(API_CONFIG.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'loadTree',
+                        familyId: currentFamilyId,
+                        password: password
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('📝 Respuesta cargar:', result);
+                
+                if (result.success) {
+                    if (result.data && result.data.treeData) {
+                        familyTree = result.data.treeData;
+                        renderTree();
+                        updateStats();
+                        
+                        const memberCount = Object.keys(familyTree).length;
+                        showSyncStatus('success', `✅ ${memberCount} personas cargadas`);
+                        console.log(`✅ Árbol cargado: ${memberCount} personas`);
+                        
+                        if (result.data.lastUpdate) {
+                            const lastUpdate = new Date(result.data.lastUpdate).toLocaleString();
+                            console.log('📅 Última actualización:', lastUpdate);
+                        }
+                    } else {
+                        familyTree = {};
+                        renderTree();
+                        updateStats();
+                        showSyncStatus('success', '📝 Árbol vacío - Agrega la primera persona');
+                    }
+                } else {
+                    throw new Error(result.message || 'Error desconocido');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error cargando desde la nube:', error);
+                showSyncStatus('error', '❌ Error al cargar');
+                
+                if (error.message.includes('expirada')) {
+                    setTimeout(() => {
+                        alert('Tu sesión ha expirado. Serás redirigido al login.');
+                        logout();
+                    }, 2000);
+                }
+            } finally {
+                loadBtn.disabled = false;
+                loadBtn.innerHTML = originalText;
+            }
+        }
+
+        // Auto-guardado
+        let autoSaveInterval;
+
+        function startAutoSave() {
+            // Auto-guardar cada 5 minutos
+            autoSaveInterval = setInterval(async () => {
+                if (currentFamilyId && Object.keys(familyTree).length > 0) {
+                    console.log('🔄 Auto-guardado...');
+                    await saveTreeToCloud();
+                }
+            }, 5 * 60 * 1000);
+        }
+
+        function stopAutoSave() {
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
+                autoSaveInterval = null;
+            }
+        }
+
+        // Estados de sincronización
+        function showSyncStatus(type, message) {
+            const status = document.getElementById('sync-status');
+            status.className = `sync-status ${type}`;
+            status.textContent = message;
+            status.style.display = 'block';
+            
+            // Ocultar después de 3 segundos (excepto errores)
+            if (type !== 'error') {
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 3000);
+            } else {
+                // Errores se ocultan después de 5 segundos
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Exportar/Importar
+        function exportTree() {
+            if (Object.keys(familyTree).length === 0) {
+                alert('No hay datos para exportar');
+                return;
+            }
+            
+            const dataToExport = {
+                familyId: currentFamilyId,
+                exportDate: new Date().toISOString(),
+                version: '1.0',
+                tree: familyTree
+            };
+            
+            const dataStr = JSON.stringify(dataToExport, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `arbol_${currentFamilyId}_${new Date().toISOString().split('T')[0]}.json`;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showSyncStatus('success', '📄 Árbol exportado');
+        }
+
+        function importTree() {
+            document.getElementById('import-input').click();
+        }
+
+        function handleImportFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (Object.keys(familyTree).length > 0) {
+                if (!confirm('¿Importar reemplazará todos los datos actuales. ¿Continuar?')) {
+                    return;
+                }
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const importedData = JSON.parse(event.target.result);
+                    
+                    if (importedData.tree && typeof importedData.tree === 'object') {
+                        familyTree = importedData.tree;
+                        renderTree();
+                        updateStats();
+                        saveTreeToCloud();
+                        
+                        const memberCount = Object.keys(familyTree).length;
+                        showSyncStatus('success', `✅ ${memberCount} personas importadas`);
+                    } else {
+                        throw new Error('Formato de archivo inválido');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error importando:', error);
+                    alert('Error al importar el archivo. Verifica que sea un archivo válido.');
+                }
+            };
+            reader.readAsText(file);
+            
+            // Limpiar input
+            e.target.value = '';
+        }
+
+        // Modales
+        function closeModal() {
+            document.getElementById('person-modal').style.display = 'none';
+            editingPersonId = null;
+        }
+
+        function closeRelationshipModal() {
+            document.getElementById('relationship-modal').style.display = 'none';
+            selectedPersonId = null;
+        }
+
+        function showConfirmModal(title, message, callback) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            confirmCallback = callback;
+            document.getElementById('confirm-modal').style.display = 'block';
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').style.display = 'none';
+            confirmCallback = null;
+        }
+
+        function executeConfirmAction() {
+            if (confirmCallback && typeof confirmCallback === 'function') {
+                confirmCallback();
+            }
+            closeConfirmModal();
+        }
+
+        // Estadísticas
+        function updateStats() {
+            const totalMembers = Object.keys(familyTree).length;
+            const generations = organizeByGenerations();
+            const totalGenerations = generations.size;
+            
+            // Calcular conexiones (relaciones)
+            let totalConnections = 0;
+            Object.values(familyTree).forEach(person => {
+                if (person.parents) totalConnections += person.parents.length;
+                if (person.children) totalConnections += person.children.length;
+                if (person.siblings) totalConnections += person.siblings.length;
+                if (person.spouses) totalConnections += person.spouses.length;
+            });
+            // Dividir entre 2 porque cada relación se cuenta dos veces
+            totalConnections = Math.floor(totalConnections / 2);
+            
+            document.getElementById('total-members').textContent = totalMembers;
+            document.getElementById('total-generations').textContent = totalGenerations;
+            document.getElementById('total-connections').textContent = totalConnections;
+        }
+
+        function resetView() {
+            renderTree();
+            updateStats();
+            selectedPersonId = null;
+            showSyncStatus('success', '🔄 Vista restablecida');
+        }
+
+        // Funciones de testing
+        async function testConnection() {
+            try {
+                showSyncStatus('syncing', '🧪 Probando conexión...');
+                
+                const response = await fetch(API_CONFIG.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'test'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('Test result:', result);
+                
+                if (result.success) {
+                    showSyncStatus('success', '✅ Conexión exitosa');
+                } else {
+                    showSyncStatus('error', '❌ Error en test');
+                }
+                
+            } catch (error) {
+                console.error('Error en test:', error);
+                showSyncStatus('error', '❌ Error de conexión');
+            }
+        }
+
+        // Eventos del teclado
+        document.addEventListener('keydown', function(e) {
+            // Escape para cerrar modales
+            if (e.key === 'Escape') {
+                closeModal();
+                closeRelationshipModal();
+                closeConfirmModal();
+            }
+            
+            // Ctrl+S para guardar
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
                 saveTreeToCloud();
             }
-        }, 5 * 60 * 1000);
+        });
+
+        // Gestión de errores globales
+        window.addEventListener('error', function(e) {
+            console.error('Error global:', e.error);
+            showSyncStatus('error', '❌ Error inesperado');
+        });
+
+        // Gestión de la conexión
+        window.addEventListener('online', function() {
+            showSyncStatus('success', '🌐 Conexión restaurada');
+        });
+
+        window.addEventListener('offline', function() {
+            showSyncStatus('error', '📡 Sin conexión a internet');
+        });
+
+        // Debug en desarrollo
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('🔧 Modo desarrollo detectado');
+            
+            // Agregar botón de test en desarrollo
+            document.addEventListener('DOMContentLoaded', function() {
+                const controls = document.querySelector('.controls');
+                if (controls) {
+                    const testBtn = document.createElement('button');
+                    testBtn.className = 'btn btn-secondary';
+                    testBtn.innerHTML = '🧪 Test API';
+                    testBtn.onclick = testConnection;
+                    controls.appendChild(testBtn);
+                }
+            });
+        }
+
+        console.log('🚀 Árbol Genealógico v1.0 - Cargado exitosamente');
     </script>
 </body>
 </html>
