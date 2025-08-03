@@ -788,9 +788,103 @@
         // Configuración de la API - CORREGIDA
         const API_CONFIG = {
             url: 'https://script.google.com/macros/s/AKfycbwRq6NsMov7ypBvK7ZFfamSkkyNbExA7itYwcx4ZXm3w1rfC04yEkzJ3GkMprE3aXyq/exec',
-            timeout: 30000
+            timeout: 30000,
+            retries: 3
         };
 
+// ===== FUNCIÓN DE FETCH MEJORADA PARA GOOGLE APPS SCRIPT =====
+        async function makeAPIRequest(data, retryCount = 0) {
+            try {
+                console.log(`🌐 Intento ${retryCount + 1} - Enviando:`, data);
+                
+                // Usar fetch con configuración específica para Google Apps Script
+                const response = await fetch(API_CONFIG.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                    mode: 'cors', // Explícitamente especificar CORS
+                    cache: 'no-cache'
+                });
+
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response headers:', response.headers);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                console.log('📝 Respuesta recibida:', result);
+                return result;
+
+            } catch (error) {
+                console.error(`❌ Error en intento ${retryCount + 1}:`, error);
+                
+                // Si es error de CORS, intentar método alternativo
+                if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+                    if (retryCount < API_CONFIG.retries - 1) {
+                        console.log('🔄 Reintentando con método alternativo...');
+                        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+                        return makeAPIRequestAlternative(data, retryCount + 1);
+                    }
+                }
+                
+                throw error;
+            }
+        }
+
+        // ===== MÉTODO ALTERNATIVO USANDO JSONP PARA GOOGLE APPS SCRIPT =====
+        async function makeAPIRequestAlternative(data, retryCount = 0) {
+            return new Promise((resolve, reject) => {
+                try {
+                    console.log('🔄 Usando método alternativo JSONP...');
+                    
+                    // Crear un nombre único para el callback
+                    const callbackName = 'jsonp_callback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    
+                    // Crear el callback global
+                    window[callbackName] = function(result) {
+                        console.log('📝 Respuesta JSONP:', result);
+                        delete window[callbackName];
+                        document.head.removeChild(script);
+                        resolve(result);
+                    };
+                    
+                    // Crear script tag para JSONP
+                    const script = document.createElement('script');
+                    const params = new URLSearchParams({
+                        callback: callbackName,
+                        data: JSON.stringify(data)
+                    });
+                    
+                    script.src = `${API_CONFIG.url}?${params}`;
+                    script.onerror = function() {
+                        delete window[callbackName];
+                        document.head.removeChild(script);
+                        reject(new Error('Error en petición JSONP'));
+                    };
+                    
+                    // Timeout para JSONP
+                    setTimeout(() => {
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                            document.head.removeChild(script);
+                            reject(new Error('Timeout en petición JSONP'));
+                        }
+                    }, API_CONFIG.timeout);
+                    
+                    document.head.appendChild(script);
+                    
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+
+    
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Iniciando aplicación...');
@@ -891,26 +985,13 @@
             try {
                 console.log('🔐 Autenticando:', familyId);
                 
-                const response = await fetch(API_CONFIG.url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'authenticate',
-                        familyId: familyId,
-                        password: password
-                    })
+                const result = await makeAPIRequest({
+                    action: 'authenticate',
+                    familyId: familyId,
+                    password: password
                 });
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const result = await response.json();
-                console.log('📝 Respuesta autenticación:', result);
-                
-                if (result.success) {
+                if (result && result.success) {
                     currentFamilyId = familyId;
                     
                     // Guardar autenticación con timestamp
@@ -936,7 +1017,18 @@
                 
             } catch (error) {
                 console.error('❌ Error de autenticación:', error);
-                showError('Error de conexión. Verifica tu internet e intenta nuevamente.');
+                
+                let errorMessage = 'Error de conexión. ';
+                if (error.message.includes('CORS')) {
+                    errorMessage += 'Problema de CORS detectado. ';
+                }
+                if (error.message.includes('404')) {
+                    errorMessage += 'Verifica que el script de Google Apps esté publicado correctamente.';
+                } else {
+                    errorMessage += 'Verifica tu internet e intenta nuevamente.';
+                }
+                
+                showError(errorMessage);
             } finally {
                 loginBtn.disabled = false;
                 loginBtn.innerHTML = 'Acceder';
@@ -1684,27 +1776,14 @@ function resetPhotoUpload() {
                 
                 console.log('💾 Guardando árbol en la nube...');
                 
-                const response = await fetch(API_CONFIG.url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'saveTree',
-                        familyId: currentFamilyId,
-                        password: password,
-                        treeData: familyTree
-                    })
+                const result = await makeAPIRequest({
+                    action: 'saveTree',
+                    familyId: currentFamilyId,
+                    password: password,
+                    treeData: familyTree
                 });
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const result = await response.json();
-                console.log('📝 Respuesta guardar:', result);
-                
-                if (result.success) {
+                if (result && result.success) {
                     showSyncStatus('success', '✅ Guardado en la nube');
                     console.log('✅ Árbol guardado exitosamente');
                 } else {
@@ -1748,26 +1827,13 @@ function resetPhotoUpload() {
                 
                 console.log('📥 Cargando árbol desde la nube...');
                 
-                const response = await fetch(API_CONFIG.url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'loadTree',
-                        familyId: currentFamilyId,
-                        password: password
-                    })
+                const result = await makeAPIRequest({
+                    action: 'loadTree',
+                    familyId: currentFamilyId,
+                    password: password
                 });
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const result = await response.json();
-                console.log('📝 Respuesta cargar:', result);
-                
-                if (result.success) {
+                if (result && result.success) {
                     if (result.data && result.data.treeData) {
                         familyTree = result.data.treeData;
                         renderTree();
@@ -1806,7 +1872,6 @@ function resetPhotoUpload() {
                 loadBtn.innerHTML = originalText;
             }
         }
-
         // Auto-guardado
         let autoSaveInterval;
 
@@ -1977,36 +2042,35 @@ function resetPhotoUpload() {
         }
 
         // Funciones de testing
-        async function testConnection() {
+       async function testConnection() {
             try {
                 showSyncStatus('syncing', '🧪 Probando conexión...');
                 
-                const response = await fetch(API_CONFIG.url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'test'
-                    })
+                const result = await makeAPIRequest({
+                    action: 'test'
                 });
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const result = await response.json();
                 console.log('Test result:', result);
                 
-                if (result.success) {
+                if (result && result.success) {
                     showSyncStatus('success', '✅ Conexión exitosa');
+                    console.log('✅ API funcionando correctamente');
                 } else {
                     showSyncStatus('error', '❌ Error en test');
+                    console.log('❌ API no responde correctamente');
                 }
                 
             } catch (error) {
                 console.error('Error en test:', error);
                 showSyncStatus('error', '❌ Error de conexión');
+                
+                // Mostrar detalles del error en consola para debugging
+                if (error.message.includes('CORS')) {
+                    console.log('💡 Sugerencia: Verifica la configuración CORS en Google Apps Script');
+                }
+                if (error.message.includes('404')) {
+                    console.log('💡 Sugerencia: Verifica que la URL del script sea correcta y esté publicada');
+                }
             }
         }
 
@@ -2045,20 +2109,47 @@ function resetPhotoUpload() {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             console.log('🔧 Modo desarrollo detectado');
             
-            // Agregar botón de test en desarrollo
-            document.addEventListener('DOMContentLoaded', function() {
-                const controls = document.querySelector('.controls');
-                if (controls) {
-                    const testBtn = document.createElement('button');
-                    testBtn.className = 'btn btn-secondary';
-                    testBtn.innerHTML = '🧪 Test API';
-                    testBtn.onclick = testConnection;
-                    controls.appendChild(testBtn);
+// ===== VERIFICAR ESTADO DEL BACKEND AL CARGAR =====
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar conectividad del backend después de cargar
+            setTimeout(() => {
+                if (window.location.hostname !== 'localhost') {
+                    testConnection();
                 }
-            });
+            }, 2000);
+        });
+
+        // ===== DEBUGGING MEJORADO =====
+        function debugCORSIssue() {
+            console.log('🔍 Debugging CORS Issue:');
+            console.log('Origin:', window.location.origin);
+            console.log('API URL:', API_CONFIG.url);
+            console.log('User Agent:', navigator.userAgent);
+            
+            // Test simple para verificar accesibilidad
+            fetch(API_CONFIG.url, { method: 'HEAD', mode: 'no-cors' })
+                .then(() => console.log('✅ Servidor accesible'))
+                .catch(() => console.log('❌ Servidor no accesible'));
         }
 
-        console.log('🚀 Árbol Genealógico v1.0 - Cargado exitosamente');
+        // ===== MANEJO DE ERRORES MEJORADO =====
+        window.addEventListener('error', function(e) {
+            console.error('Error global:', e.error);
+            
+            if (e.error && e.error.message) {
+                if (e.error.message.includes('CORS')) {
+                    showSyncStatus('error', '❌ Error CORS - Revisa configuración');
+                    debugCORSIssue();
+                } else if (e.error.message.includes('fetch')) {
+                    showSyncStatus('error', '❌ Error de conexión');
+                } else {
+                    showSyncStatus('error', '❌ Error inesperado');
+                }
+            }
+        });
+
+        console.log('🔧 Sistema anti-CORS cargado');
+
     </script>
 </body>
 </html>
