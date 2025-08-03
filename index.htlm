@@ -1,10 +1,1259 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Hola Mundo</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Árbol Genealógico Interactivo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: auto;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            background: linear-gradient(45deg, #2980b9, #3498db);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #7f8c8d, #95a5a6);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(45deg, #c0392b, #e74c3c);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+        }
+
+        .tree-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            min-height: 70vh;
+            position: relative;
+            overflow: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .tree-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 100%;
+            padding: 20px;
+        }
+
+        .generation {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            margin: 30px 0;
+            position: relative;
+            width: 100%;
+        }
+
+        .person-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 0 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            min-width: 200px;
+            max-width: 250px;
+            border: 2px solid #ecf0f1;
+        }
+
+        .person-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            border-color: #3498db;
+        }
+
+        .person-card.selected {
+            border-color: #e74c3c;
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+        }
+
+        .person-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .person-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .person-photo.empty {
+            border: 2px dashed #bdc3c7;
+            background: #ecf0f1;
+            color: #7f8c8d;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .person-info h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .person-info p {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .person-actions {
+            display: none;
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            background: white;
+            border-radius: 50%;
+            padding: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .person-card:hover .person-actions,
+        .person-card.selected .person-actions {
+            display: block;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #3498db;
+            transition: color 0.3s ease;
+            margin: 0 2px;
+        }
+
+        .action-btn:hover {
+            color: #e74c3c;
+        }
+
+        .add-person-btn {
+            width: 200px;
+            height: 200px;
+            border: 3px dashed #bdc3c7;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 15px;
+            color: #7f8c8d;
+        }
+
+        .add-person-btn:hover {
+            border-color: #3498db;
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        .add-person-btn i {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .connection-line {
+            position: absolute;
+            background: #3498db;
+            z-index: 1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90%;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            margin-bottom: 25px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .photo-upload {
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .photo-upload:hover,
+        .photo-upload.dragover {
+            border-color: #3498db;
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .photo-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 15px auto;
+            object-fit: cover;
+            display: none;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .btn-cancel {
+            background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+        }
+
+        .family-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255,255,255,0.2);
+            padding: 15px 25px;
+            border-radius: 15px;
+            text-align: center;
+            color: white;
+        }
+
+        .stat-item h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .zoom-controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .zoom-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.9);
+            color: #2c3e50;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .zoom-btn:hover {
+            background: white;
+            transform: scale(1.1);
+            color: #3498db;
+        }
+
+        .credits {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #2c3e50;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .sync-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .sync-status.syncing {
+            background: #f39c12;
+        }
+
+        .sync-status.success {
+            background: #27ae60;
+        }
+
+        .sync-status.error {
+            background: #e74c3c;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .tree-container {
+                padding: 20px;
+            }
+            
+            .person-card {
+                min-width: 150px;
+                padding: 15px;
+            }
+            
+            .modal-content {
+                padding: 20px;
+            }
+
+            .credits {
+                position: relative;
+                text-align: center;
+                margin-top: 20px;
+            }
+        }
+
+        .relationship-tag {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .spouse-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .marriage-line {
+            width: 30px;
+            height: 3px;
+            background: #e74c3c;
+            position: relative;
+        }
+
+        .marriage-line::before,
+        .marriage-line::after {
+            content: '💕';
+            position: absolute;
+            top: -8px;
+            font-size: 1rem;
+        }
+
+        .marriage-line::before {
+            left: -15px;
+        }
+
+        .marriage-line::after {
+            right: -15px;
+        }
+    </style>
 </head>
 <body>
-  <h1>Hola Mundo</h1>
+    <div class="container">
+        <div class="header">
+            <h1>🌳 Mi Árbol Genealógico</h1>
+            <p>Construye y explora la historia de tu familia</p>
+            
+            <div class="family-stats">
+                <div class="stat-item">
+                    <h3 id="total-members">0</h3>
+                    <p>Miembros</p>
+                </div>
+                <div class="stat-item">
+                    <h3 id="total-generations">0</h3>
+                    <p>Generaciones</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="addPersonModal()">
+                ➕ Agregar Persona
+            </button>
+            <button class="btn btn-success" onclick="syncWithSheets()">
+                ☁️ Sincronizar con Google Sheets
+            </button>
+            <button class="btn btn-secondary" onclick="exportTree()">
+                💾 Exportar Árbol
+            </button>
+            <button class="btn btn-danger" onclick="resetTree()">
+                🔄 Limpiar Todo
+            </button>
+        </div>
+
+        <div class="tree-container">
+            <div class="tree-view" id="tree-view">
+                <!-- El árbol se generará aquí dinámicamente -->
+            </div>
+        </div>
+
+        <div class="zoom-controls">
+            <button class="zoom-btn" onclick="zoomIn()">+</button>
+            <button class="zoom-btn" onclick="zoomOut()">-</button>
+            <button class="zoom-btn" onclick="resetZoom()">⌂</button>
+        </div>
+
+        <div class="sync-status" id="sync-status" style="display: none;">
+            Sincronizando...
+        </div>
+
+        <div class="credits">
+            © 2025 Nestor Manrique - Árbol Genealógico Interactivo
+        </div>
+    </div>
+
+    <!-- Modal para agregar/editar persona -->
+    <div class="modal" id="person-modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Agregar Nueva Persona</h2>
+            <form id="person-form">
+                <div class="form-group">
+                    <label for="person-name">Nombre Completo *</label>
+                    <input type="text" id="person-name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="person-birth">Fecha de Nacimiento</label>
+                    <input type="date" id="person-birth">
+                </div>
+
+                <div class="form-group">
+                    <label for="person-death">Fecha de Fallecimiento (opcional)</label>
+                    <input type="date" id="person-death">
+                </div>
+
+                <div class="form-group">
+                    <label for="person-gender">Género</label>
+                    <select id="person-gender">
+                        <option value="male">Masculino</option>
+                        <option value="female">Femenino</option>
+                        <option value="other">Otro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="person-description">Descripción</label>
+                    <textarea id="person-description" placeholder="Profesión, hobbies, datos importantes..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Foto</label>
+                    <div class="photo-upload" onclick="document.getElementById('photo-input').click()">
+                        <input type="file" id="photo-input" accept="image/*" style="display: none;">
+                        <p>📷 Haz clic para subir una foto o arrastra una imagen aquí</p>
+                        <img class="photo-preview" id="photo-preview">
+                    </div>
+                </div>
+
+                <div class="form-group" id="relationship-group" style="display: none;">
+                    <label for="relationship-type">Relación con la persona seleccionada</label>
+                    <select id="relationship-type">
+                        <option value="parent">Padre/Madre</option>
+                        <option value="child">Hijo/Hija</option>
+                        <option value="sibling">Hermano/Hermana</option>
+                        <option value="spouse">Esposo/Esposa</option>
+                    </select>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let familyTree = JSON.parse(localStorage.getItem('familyTree')) || {};
+        let selectedPersonId = null;
+        let currentZoom = 1;
+        let editingPersonId = null;
+
+        // Configuración de Google Apps Script
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/TU_SCRIPT_ID/exec'; // Reemplaza con tu URL
+
+        // Generar ID único
+        function generateId() {
+            return 'person_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Sincronizar con Google Sheets
+        async function syncWithSheets() {
+            const syncStatus = document.getElementById('sync-status');
+            syncStatus.style.display = 'block';
+            syncStatus.className = 'sync-status syncing';
+            syncStatus.textContent = 'Sincronizando con Google Sheets...';
+
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'saveTree',
+                        data: familyTree
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    syncStatus.className = 'sync-status success';
+                    syncStatus.textContent = '✅ Sincronizado correctamente';
+                } else {
+                    throw new Error(result.error || 'Error desconocido');
+                }
+            } catch (error) {
+                console.error('Error sincronizando:', error);
+                syncStatus.className = 'sync-status error';
+                syncStatus.textContent = '❌ Error al sincronizar';
+            }
+
+            setTimeout(() => {
+                syncStatus.style.display = 'none';
+            }, 3000);
+        }
+
+        // Cargar datos desde Google Sheets
+        async function loadFromSheets() {
+            try {
+                const response = await fetch(APPS_SCRIPT_URL + '?action=loadTree');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    familyTree = result.data;
+                    saveTree();
+                    renderTree();
+                }
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+            }
+        }
+
+        // Configurar eventos de drag and drop para fotos
+        function setupPhotoUpload() {
+            const photoUpload = document.querySelector('.photo-upload');
+            const photoInput = document.getElementById('photo-input');
+            const photoPreview = document.getElementById('photo-preview');
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                photoUpload.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                photoUpload.addEventListener(eventName, () => {
+                    photoUpload.classList.add('dragover');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                photoUpload.addEventListener(eventName, () => {
+                    photoUpload.classList.remove('dragover');
+                });
+            });
+
+            photoUpload.addEventListener('drop', handleDrop);
+            photoInput.addEventListener('change', handleFileSelect);
+
+            function handleDrop(e) {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            }
+
+            function handleFileSelect(e) {
+                if (e.target.files.length > 0) {
+                    handleFile(e.target.files[0]);
+                }
+            }
+
+            function handleFile(file) {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        photoPreview.src = e.target.result;
+                        photoPreview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        }
+
+        // Abrir modal para agregar persona
+        function addPersonModal(relationshipTo = null) {
+            selectedPersonId = relationshipTo;
+            editingPersonId = null;
+            
+            document.getElementById('modal-title').textContent = relationshipTo ? 'Agregar Familiar' : 'Agregar Nueva Persona';
+            document.getElementById('person-form').reset();
+            document.getElementById('photo-preview').style.display = 'none';
+            
+            const relationshipGroup = document.getElementById('relationship-group');
+            if (relationshipTo) {
+                relationshipGroup.style.display = 'block';
+            } else {
+                relationshipGroup.style.display = 'none';
+            }
+            
+            document.getElementById('person-modal').style.display = 'block';
+            setupPhotoUpload();
+        }
+
+        // Editar persona existente
+        function editPerson(personId) {
+            editingPersonId = personId;
+            const person = familyTree[personId];
+            
+            document.getElementById('modal-title').textContent = 'Editar Persona';
+            document.getElementById('person-name').value = person.name || '';
+            document.getElementById('person-birth').value = person.birth || '';
+            document.getElementById('person-death').value = person.death || '';
+            document.getElementById('person-gender').value = person.gender || 'male';
+            document.getElementById('person-description').value = person.description || '';
+            
+            const photoPreview = document.getElementById('photo-preview');
+            if (person.photo) {
+                photoPreview.src = person.photo;
+                photoPreview.style.display = 'block';
+            } else {
+                photoPreview.style.display = 'none';
+            }
+            
+            document.getElementById('relationship-group').style.display = 'none';
+            document.getElementById('person-modal').style.display = 'block';
+            setupPhotoUpload();
+        }
+
+        // Cerrar modal
+        function closeModal() {
+            document.getElementById('person-modal').style.display = 'none';
+            selectedPersonId = null;
+            editingPersonId = null;
+        }
+
+        // Guardar persona
+        document.getElementById('person-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('person-name').value;
+            const birth = document.getElementById('person-birth').value;
+            const death = document.getElementById('person-death').value;
+            const gender = document.getElementById('person-gender').value;
+            const description = document.getElementById('person-description').value;
+            const photoPreview = document.getElementById('photo-preview');
+            const photo = photoPreview.style.display === 'block' ? photoPreview.src : null;
+
+            if (editingPersonId) {
+                // Editar persona existente
+                familyTree[editingPersonId] = {
+                    ...familyTree[editingPersonId],
+                    name,
+                    birth,
+                    death,
+                    gender,
+                    description,
+                    photo
+                };
+            } else {
+                // Crear nueva persona
+                const personId = generateId();
+                const newPerson = {
+                    id: personId,
+                    name,
+                    birth,
+                    death,
+                    gender,
+                    description,
+                    photo,
+                    parents: [],
+                    children: [],
+                    siblings: [],
+                    spouses: []
+                };
+
+                familyTree[personId] = newPerson;
+
+                // Establecer relaciones
+                if (selectedPersonId) {
+                    const relationshipType = document.getElementById('relationship-type').value;
+                    const selectedPerson = familyTree[selectedPersonId];
+
+                    switch (relationshipType) {
+                        case 'parent':
+                            newPerson.children.push(selectedPersonId);
+                            selectedPerson.parents.push(personId);
+                            break;
+                        case 'child':
+                            newPerson.parents.push(selectedPersonId);
+                            selectedPerson.children.push(personId);
+                            break;
+                        case 'sibling':
+                            newPerson.siblings.push(selectedPersonId);
+                            selectedPerson.siblings.push(personId);
+                            break;
+                        case 'spouse':
+                            newPerson.spouses.push(selectedPersonId);
+                            selectedPerson.spouses.push(personId);
+                            break;
+                    }
+                }
+            }
+
+            saveTree();
+            renderTree();
+            closeModal();
+            
+            // Auto-sincronizar si está configurado
+            if (APPS_SCRIPT_URL.includes('script.google.com')) {
+                syncWithSheets();
+            }
+        });
+
+        // Eliminar persona
+        function deletePerson(personId) {
+            if (confirm('¿Estás seguro de que quieres eliminar esta persona? Esta acción no se puede deshacer.')) {
+                const person = familyTree[personId];
+                
+                // Eliminar referencias en otros familiares
+                person.parents.forEach(parentId => {
+                    if (familyTree[parentId]) {
+                        familyTree[parentId].children = familyTree[parentId].children.filter(id => id !== personId);
+                    }
+                });
+                
+                person.children.forEach(childId => {
+                    if (familyTree[childId]) {
+                        familyTree[childId].parents = familyTree[childId].parents.filter(id => id !== personId);
+                    }
+                });
+                
+                person.siblings.forEach(siblingId => {
+                    if (familyTree[siblingId]) {
+                        familyTree[siblingId].siblings = familyTree[siblingId].siblings.filter(id => id !== personId);
+                    }
+                });
+                
+                person.spouses.forEach(spouseId => {
+                    if (familyTree[spouseId]) {
+                        familyTree[spouseId].spouses = familyTree[spouseId].spouses.filter(id => id !== personId);
+                    }
+                });
+
+                delete familyTree[personId];
+                saveTree();
+                renderTree();
+                
+                // Auto-sincronizar si está configurado
+                if (APPS_SCRIPT_URL.includes('script.google.com')) {
+                    syncWithSheets();
+                }
+            }
+        }
+
+        // Renderizar árbol
+        function renderTree() {
+            const treeView = document.getElementById('tree-view');
+            treeView.innerHTML = '';
+
+            if (Object.keys(familyTree).length === 0) {
+                treeView.innerHTML = `
+                    <div class="add-person-btn" onclick="addPersonModal()">
+                        <i>👤</i>
+                        <p>Agregar primera persona</p>
+                    </div>
+                `;
+                updateStats();
+                return;
+            }
+
+            // Encontrar la generación más antigua (personas sin padres)
+            const rootPeople = Object.values(familyTree).filter(person => person.parents.length === 0);
+            
+            if (rootPeople.length === 0) {
+                // Si no hay raíces, tomar la primera persona
+                const firstPerson = Object.values(familyTree)[0];
+                renderGeneration([firstPerson], treeView, 0);
+            } else {
+                renderGeneration(rootPeople, treeView, 0);
+            }
+
+            updateStats();
+        }
+
+        // Renderizar una generación específica
+        function renderGeneration(people, container, level) {
+            if (people.length === 0) return;
+
+            const generation = document.createElement('div');
+            generation.className = 'generation';
+            generation.style.marginTop = level === 0 ? '0' : '50px';
+
+            people.forEach(person => {
+                const personCard = createPersonCard(person);
+                generation.appendChild(personCard);
+
+                // Renderizar cónyuges junto a la persona
+                if (person.spouses && person.spouses.length > 0) {
+                    person.spouses.forEach(spouseId => {
+                        if (familyTree[spouseId]) {
+                            const spouseContainer = document.createElement('div');
+                            spouseContainer.className = 'spouse-container';
+                            
+                            const marriageLine = document.createElement('div');
+                            marriageLine.className = 'marriage-line';
+                            
+                            const spouseCard = createPersonCard(familyTree[spouseId]);
+                            
+                            generation.appendChild(marriageLine);
+                            generation.appendChild(spouseCard);
+                        }
+                    });
+                }
+            });
+
+            container.appendChild(generation);
+
+            // Renderizar siguiente generación (hijos)
+            const nextGeneration = [];
+            people.forEach(person => {
+                if (person.children && person.children.length > 0) {
+                    person.children.forEach(childId => {
+                        if (familyTree[childId] && !nextGeneration.find(p => p.id === childId)) {
+                            nextGeneration.push(familyTree[childId]);
+                        }
+                    });
+                }
+            });
+
+            if (nextGeneration.length > 0) {
+                renderGeneration(nextGeneration, container, level + 1);
+            }
+        }
+
+        // Crear tarjeta de persona
+        function createPersonCard(person) {
+            const card = document.createElement('div');
+            card.className = 'person-card';
+            card.onclick = () => selectPerson(person.id);
+
+            const photo = document.createElement('div');
+            photo.className = 'person-photo';
+            
+            if (person.photo) {
+                const img = document.createElement('img');
+                img.src = person.photo;
+                img.alt = person.name;
+                photo.appendChild(img);
+            } else {
+                photo.textContent = person.name ? person.name.charAt(0).toUpperCase() : '?';
+                photo.classList.add('empty');
+            }
+
+            const info = document.createElement('div');
+            info.className = 'person-info';
+            
+            const name = document.createElement('h3');
+            name.textContent = person.name || 'Sin nombre';
+            
+            const details = document.createElement('p');
+            let detailsText = '';
+            if (person.birth) {
+                detailsText += `Nacido: ${formatDate(person.birth)}`;
+            }
+            if (person.death) {
+                detailsText += `\nFallecido: ${formatDate(person.death)}`;
+            }
+            if (person.description) {
+                detailsText += `\n${person.description}`;
+            }
+            details.textContent = detailsText;
+
+            const actions = document.createElement('div');
+            actions.className = 'person-actions';
+            
+            const addBtn = document.createElement('button');
+            addBtn.className = 'action-btn';
+            addBtn.innerHTML = '➕';
+            addBtn.title = 'Agregar familiar';
+            addBtn.onclick = (e) => {
+                e.stopPropagation();
+                addPersonModal(person.id);
+            };
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'action-btn';
+            editBtn.innerHTML = '✏️';
+            editBtn.title = 'Editar';
+            editBtn.onclick = (e) => {
+                e.stopPropagation();
+                editPerson(person.id);
+            };
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'action-btn';
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.title = 'Eliminar';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                deletePerson(person.id);
+            };
+
+            actions.appendChild(addBtn);
+            actions.appendChild(editBtn);
+            actions.appendChild(deleteBtn);
+
+            info.appendChild(name);
+            info.appendChild(details);
+            
+            card.appendChild(photo);
+            card.appendChild(info);
+            card.appendChild(actions);
+
+            return card;
+        }
+
+        // Seleccionar persona
+        function selectPerson(personId) {
+            // Remover selección anterior
+            document.querySelectorAll('.person-card.selected').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Seleccionar nueva persona
+            selectedPersonId = personId;
+            event.currentTarget.classList.add('selected');
+        }
+
+        // Formatear fecha
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-ES');
+        }
+
+        // Actualizar estadísticas
+        function updateStats() {
+            const totalMembers = Object.keys(familyTree).length;
+            const generations = calculateGenerations();
+            
+            document.getElementById('total-members').textContent = totalMembers;
+            document.getElementById('total-generations').textContent = generations;
+        }
+
+        // Calcular número de generaciones
+        function calculateGenerations() {
+            if (Object.keys(familyTree).length === 0) return 0;
+
+            let maxDepth = 0;
+            const visited = new Set();
+
+            function getDepth(personId, depth = 1) {
+                if (visited.has(personId) || !familyTree[personId]) return depth;
+                visited.add(personId);
+
+                const person = familyTree[personId];
+                let currentMaxDepth = depth;
+
+                if (person.children && person.children.length > 0) {
+                    person.children.forEach(childId => {
+                        const childDepth = getDepth(childId, depth + 1);
+                        currentMaxDepth = Math.max(currentMaxDepth, childDepth);
+                    });
+                }
+
+                return currentMaxDepth;
+            }
+
+            // Encontrar personas sin padres (raíces)
+            const rootPeople = Object.values(familyTree).filter(person => person.parents.length === 0);
+            
+            if (rootPeople.length === 0) {
+                // Si no hay raíces, usar la primera persona
+                const firstPersonId = Object.keys(familyTree)[0];
+                maxDepth = getDepth(firstPersonId);
+            } else {
+                rootPeople.forEach(person => {
+                    const depth = getDepth(person.id);
+                    maxDepth = Math.max(maxDepth, depth);
+                });
+            }
+
+            return maxDepth;
+        }
+
+        // Guardar árbol en localStorage
+        function saveTree() {
+            localStorage.setItem('familyTree', JSON.stringify(familyTree));
+        }
+
+        // Exportar árbol
+        function exportTree() {
+            const dataStr = JSON.stringify(familyTree, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'arbol_genealogico.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // Importar árbol
+        function importTree() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const importedTree = JSON.parse(e.target.result);
+                            familyTree = importedTree;
+                            saveTree();
+                            renderTree();
+                            alert('Árbol importado correctamente');
+                        } catch (error) {
+                            alert('Error al importar el archivo: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        // Limpiar árbol
+        function resetTree() {
+            if (confirm('¿Estás seguro de que quieres eliminar todo el árbol genealógico? Esta acción no se puede deshacer.')) {
+                familyTree = {};
+                saveTree();
+                renderTree();
+            }
+        }
+
+        // Controles de zoom
+        function zoomIn() {
+            currentZoom *= 1.2;
+            applyZoom();
+        }
+
+        function zoomOut() {
+            currentZoom /= 1.2;
+            applyZoom();
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            applyZoom();
+        }
+
+        function applyZoom() {
+            const treeView = document.getElementById('tree-view');
+            treeView.style.transform = `scale(${currentZoom})`;
+            treeView.style.transformOrigin = 'top center';
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('person-modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Inicializar aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            renderTree();
+            
+            // Cargar datos desde Google Sheets al iniciar (si está configurado)
+            if (APPS_SCRIPT_URL.includes('script.google.com')) {
+                loadFromSheets();
+            }
+        });
+
+        // Agregar botón de importar a los controles
+        document.querySelector('.controls').innerHTML += `
+            <button class="btn btn-secondary" onclick="importTree()">
+                📁 Importar Árbol
+            </button>
+        `;
+    </script>
 </body>
 </html>
