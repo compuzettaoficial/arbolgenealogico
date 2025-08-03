@@ -747,678 +747,374 @@
         let selectedPersonId = null;
         let editingPersonId = null;
 
-        // Configuración de la API - ACTUALIZADA
-        const API_CONFIG = {
-            url: 'https://script.google.com/macros/s/AKfycbwRq6NsMov7ypBvK7ZFfamSkkyNbExA7itYwcx4ZXm3w1rfC04yEkzJ3GkMprE3aXyq/exec',
-            timeout: 30000
-        };
-
-        // Función auxiliar para hacer peticiones - MEJORADA
-        async function makeAPIRequest(data) {
-            try {
-                console.log('🔍 Diagnóstico detallado:');
-                console.log('URL:', API_CONFIG.url);
-                console.log('Enviando petición:', data);
-                
-                const response = await fetch(API_CONFIG.url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data),
-                    mode: 'cors'
-                });
-                
-                console.log('📊 Respuesta status:', response.status);
-                console.log('📊 Respuesta OK:', response.ok);
-                console.log('📊 Respuesta headers:', [...response.headers.entries()]);
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.log('❌ Error response text:', errorText);
-                    throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
-                }
-                
-                const result = await response.json();
-                console.log('✅ Resultado exitoso:', result);
-                return result;
-                
-            } catch (error) {
-                console.error('💥 Error completo:', error);
-                console.error('💥 Error name:', error.name);
-                console.error('💥 Error message:', error.message);
-                console.error('💥 Error stack:', error.stack);
-                
-                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                    throw new Error('🔗 Error de conexión: No se puede conectar al servidor. Verifica:\n1. URL correcta\n2. Apps Script desplegado\n3. Permisos configurados');
-                } else if (error.message.includes('CORS')) {
-                    throw new Error('🚫 Error CORS: El servidor no permite peticiones desde este dominio');
-                } else {
-                    throw error;
-                }
-            }
-        }
-
-        // Función de prueba desde login
-        async function testConnectionFromLogin() {
-            console.log('🧪 Probando conexión desde login...');
-            try {
-                showSuccess('Probando conexión...');
-                
-                const result = await makeAPIRequest({
-                    action: 'test'
-                });
-                
-                if (result.success) {
-                    console.log('✅ Conexión exitosa:', result);
-                    showSuccess('✅ Conexión exitosa: ' + result.message);
-                } else {
-                    console.log('❌ Error en test:', result);
-                    showError('❌ Error: ' + result.message);
-                }
-            } catch (error) {
-                console.error('❌ Error de conexión:', error);
-                showError('❌ Error: ' + error.message);
-            }
-        }
         
-        // Inicialización
-        document.addEventListener('DOMContentLoaded', function() {
-            checkAuthentication();
-            setupEventListeners();
-        });
+// ===== CONFIGURACIÓN =====
+const API_URL = 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUÍ'; // Reemplaza con tu URL
 
-        function checkAuthentication() {
-            const savedFamily = JSON.parse(sessionStorage.getItem('familyAuth') || '{}');
-            if (savedFamily.familyId && savedFamily.authenticated) {
-                currentFamilyId = savedFamily.familyId;
-                showApp();
-                loadTreeFromCloud();
-            } else {
-                showLogin();
-            }
+// ===== VARIABLES GLOBALES =====
+let currentFamily = null;
+let currentPassword = null;
+let familyTree = {};
+
+// ===== FUNCIONES DE COMUNICACIÓN CON BACKEND =====
+async function callBackend(data) {
+  try {
+    console.log('🚀 Enviando al backend:', data);
+    
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Respuesta del backend:', result);
+    return result;
+    
+  } catch (error) {
+    console.error('❌ Error en callBackend:', error);
+    return { 
+      success: false, 
+      message: `Error de conexión: ${error.message}` 
+    };
+  }
+}
+
+// ===== FUNCIONES DE AUTENTICACIÓN =====
+async function authenticate() {
+  const familyId = document.getElementById('familyId').value.trim();
+  const password = document.getElementById('password').value.trim();
+  
+  if (!familyId || !password) {
+    showMessage('❌ Por favor completa todos los campos', 'error');
+    return;
+  }
+  
+  showMessage('🔐 Autenticando...', 'info');
+  
+  try {
+    const result = await callBackend({
+      action: 'authenticate',
+      familyId: familyId,
+      password: password
+    });
+    
+    if (result.success) {
+      currentFamily = familyId;
+      currentPassword = password;
+      
+      showMessage('✅ Autenticación exitosa', 'success');
+      showSection('tree-section');
+      hideSection('auth-section');
+      
+      // Cargar árbol existente
+      await loadTree();
+      
+    } else {
+      showMessage(`❌ ${result.message}`, 'error');
+    }
+    
+  } catch (error) {
+    console.error('Error en authenticate:', error);
+    showMessage('🔗 Error de conexión: No se puede conectar al servidor. Verifica: 1. URL correcta 2. Apps Script desplegado 3. Permisos configurados', 'error');
+  }
+}
+
+// ===== FUNCIONES DE GESTIÓN DE ÁRBOLES =====
+async function saveTree() {
+  if (!currentFamily || !currentPassword) {
+    showMessage('❌ No hay sesión activa', 'error');
+    return;
+  }
+  
+  showMessage('💾 Guardando árbol...', 'info');
+  
+  try {
+    const result = await callBackend({
+      action: 'saveTree',
+      familyId: currentFamily,
+      password: currentPassword,
+      treeData: familyTree
+    });
+    
+    if (result.success) {
+      showMessage(`✅ Árbol guardado - ${result.data?.memberCount || 0} miembros`, 'success');
+    } else {
+      showMessage(`❌ Error guardando: ${result.message}`, 'error');
+    }
+    
+  } catch (error) {
+    console.error('Error en saveTree:', error);
+    showMessage('❌ Error guardando el árbol', 'error');
+  }
+}
+
+async function loadTree() {
+  if (!currentFamily || !currentPassword) {
+    showMessage('❌ No hay sesión activa', 'error');
+    return;
+  }
+  
+  showMessage('📥 Cargando árbol...', 'info');
+  
+  try {
+    const result = await callBackend({
+      action: 'loadTree',
+      familyId: currentFamily,
+      password: currentPassword
+    });
+    
+    if (result.success) {
+      familyTree = result.data?.treeData || {};
+      const memberCount = result.data?.memberCount || 0;
+      const lastUpdate = result.data?.lastUpdate;
+      
+      showMessage(`✅ Árbol cargado - ${memberCount} miembros`, 'success');
+      
+      if (lastUpdate) {
+        const date = new Date(lastUpdate).toLocaleString();
+        showMessage(`📅 Última actualización: ${date}`, 'info');
+      }
+      
+      renderTree();
+    } else {
+      showMessage(`❌ Error cargando: ${result.message}`, 'error');
+    }
+    
+  } catch (error) {
+    console.error('Error en loadTree:', error);
+    showMessage('❌ Error cargando el árbol', 'error');
+  }
+}
+
+// ===== FUNCIONES DE TEST =====
+async function testConnection() {
+  showMessage('🧪 Probando conexión...', 'info');
+  
+  try {
+    const result = await callBackend({
+      action: 'test'
+    });
+    
+    if (result.success) {
+      showMessage('✅ Conexión exitosa con el backend', 'success');
+      console.log('Test result:', result);
+    } else {
+      showMessage(`❌ Test falló: ${result.message}`, 'error');
+    }
+    
+  } catch (error) {
+    console.error('Error en testConnection:', error);
+    showMessage('❌ No se puede conectar al backend. Verifica la URL y configuración.', 'error');
+  }
+}
+
+// ===== FUNCIONES DE GESTIÓN DE MIEMBROS =====
+function addMember() {
+  const name = document.getElementById('memberName').value.trim();
+  const relation = document.getElementById('memberRelation').value;
+  const birth = document.getElementById('memberBirth').value;
+  const notes = document.getElementById('memberNotes').value.trim();
+  
+  if (!name) {
+    showMessage('❌ El nombre es obligatorio', 'error');
+    return;
+  }
+  
+  const memberId = generateId();
+  familyTree[memberId] = {
+    id: memberId,
+    name: name,
+    relation: relation,
+    birthDate: birth,
+    notes: notes,
+    addedDate: new Date().toISOString()
+  };
+  
+  // Limpiar formulario
+  document.getElementById('memberName').value = '';
+  document.getElementById('memberRelation').value = '';
+  document.getElementById('memberBirth').value = '';
+  document.getElementById('memberNotes').value = '';
+  
+  showMessage(`✅ ${name} agregado al árbol`, 'success');
+  renderTree();
+}
+
+function deleteMember(memberId) {
+  if (confirm('¿Estás seguro de eliminar este miembro?')) {
+    const memberName = familyTree[memberId]?.name || 'Miembro';
+    delete familyTree[memberId];
+    showMessage(`🗑️ ${memberName} eliminado`, 'info');
+    renderTree();
+  }
+}
+
+// ===== FUNCIONES DE RENDERIZADO =====
+function renderTree() {
+  const container = document.getElementById('family-tree');
+  
+  if (!container) {
+    console.error('No se encontró el contenedor family-tree');
+    return;
+  }
+  
+  const members = Object.values(familyTree);
+  
+  if (members.length === 0) {
+    container.innerHTML = `
+      <div class="no-members">
+        <p>🌱 No hay miembros en el árbol familiar</p>
+        <p>Agrega el primer miembro usando el formulario de arriba</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = members.map(member => `
+    <div class="member-card" data-id="${member.id}">
+      <div class="member-header">
+        <h3>${member.name}</h3>
+        <button onclick="deleteMember('${member.id}')" class="delete-btn">🗑️</button>
+      </div>
+      <div class="member-info">
+        <p><strong>Parentesco:</strong> ${member.relation || 'No especificado'}</p>
+        ${member.birthDate ? `<p><strong>Nacimiento:</strong> ${member.birthDate}</p>` : ''}
+        ${member.notes ? `<p><strong>Notas:</strong> ${member.notes}</p>` : ''}
+        <p class="added-date">Agregado: ${new Date(member.addedDate).toLocaleDateString()}</p>
+      </div>
+    </div>
+  `).join('');
+  
+  updateMemberCount();
+}
+
+// ===== FUNCIONES AUXILIARES =====
+function generateId() {
+  return 'member_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+function showMessage(message, type = 'info') {
+  const messageDiv = document.getElementById('message');
+  if (!messageDiv) return;
+  
+  messageDiv.textContent = message;
+  messageDiv.className = `message ${type}`;
+  messageDiv.style.display = 'block';
+  
+  // Auto-ocultar después de 5 segundos para mensajes de éxito e info
+  if (type === 'success' || type === 'info') {
+    setTimeout(() => {
+      messageDiv.style.display = 'none';
+    }, 5000);
+  }
+}
+
+function showSection(sectionId) {
+  const section = document.getElementById(sectionId);
+  if (section) {
+    section.style.display = 'block';
+  }
+}
+
+function hideSection(sectionId) {
+  const section = document.getElementById(sectionId);
+  if (section) {
+    section.style.display = 'none';
+  }
+}
+
+function updateMemberCount() {
+  const count = Object.keys(familyTree).length;
+  const countElement = document.getElementById('member-count');
+  if (countElement) {
+    countElement.textContent = `Total de miembros: ${count}`;
+  }
+}
+
+function logout() {
+  if (confirm('¿Estás seguro de cerrar sesión?')) {
+    currentFamily = null;
+    currentPassword = null;
+    familyTree = {};
+    
+    showSection('auth-section');
+    hideSection('tree-section');
+    
+    // Limpiar formularios
+    document.getElementById('familyId').value = '';
+    document.getElementById('password').value = '';
+    
+    showMessage('👋 Sesión cerrada', 'info');
+    
+    // Limpiar el árbol renderizado
+    const container = document.getElementById('family-tree');
+    if (container) {
+      container.innerHTML = '';
+    }
+  }
+}
+
+// ===== EVENTOS Y INICIALIZACIÓN =====
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🌳 Aplicación de Árbol Genealógico iniciada');
+  
+  // Verificar que la URL del API esté configurada
+  if (API_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUÍ') {
+    showMessage('⚠️ Configuración pendiente: Actualiza la URL del API en el script', 'error');
+  }
+  
+  // Event listeners para formularios
+  const authForm = document.getElementById('auth-form');
+  if (authForm) {
+    authForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      authenticate();
+    });
+  }
+  
+  const memberForm = document.getElementById('member-form');
+  if (memberForm) {
+    memberForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      addMember();
+    });
+  }
+  
+  // Manejar Enter en campos de texto
+  const inputs = document.querySelectorAll('input[type="text"], input[type="password"]');
+  inputs.forEach(input => {
+    input.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (input.closest('#auth-form')) {
+          authenticate();
+        } else if (input.closest('#member-form')) {
+          addMember();
         }
+      }
+    });
+  });
+  
+  console.log('✅ Event listeners configurados');
+});
 
-        function setupEventListeners() {
-            // Login form
-            document.getElementById('login-form').addEventListener('submit', handleLogin);
-            
-            // Person form
-            document.getElementById('person-form').addEventListener('submit', handlePersonSave);
-            
-            // Photo upload
-            const photoInput = document.getElementById('photo-input');
-            const photoUpload = document.getElementById('photo-upload');
-            
-            photoInput.addEventListener('change', handlePhotoSelect);
-            
-            // Drag and drop para fotos
-            photoUpload.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                photoUpload.classList.add('dragover');
-            });
-            
-            photoUpload.addEventListener('dragleave', () => {
-                photoUpload.classList.remove('dragover');
-            });
-            
-            photoUpload.addEventListener('drop', (e) => {
-                e.preventDefault();
-                photoUpload.classList.remove('dragover');
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    handlePhotoFile(files[0]);
-                }
-            });
+// ===== FUNCIONES GLOBALES PARA BOTONES HTML =====
+window.authenticate = authenticate;
+window.testConnection = testConnection;
+window.saveTree = saveTree;
+window.loadTree = loadTree;
+window.addMember = addMember;
+window.deleteMember = deleteMember;
+window.logout = logout;
 
-            // Cerrar modales al hacer clic fuera
-            window.addEventListener('click', (e) => {
-                if (e.target.classList.contains('modal')) {
-                    closeModal();
-                    closeRelationshipModal();
-                }
-            });
-        }
-
-        // Login actualizado
-        async function handleLogin(e) {
-            e.preventDefault();
-            
-            const familyId = document.getElementById('family-id').value.trim();
-            const password = document.getElementById('family-password').value;
-            const loginBtn = document.getElementById('login-btn');
-            
-            if (!familyId || !password) {
-                showError('Por favor completa todos los campos');
-                return;
-            }
-            
-            loginBtn.disabled = true;
-            loginBtn.innerHTML = '<div class="loading"></div> Verificando...';
-            hideMessages();
-            
-            try {
-                console.log('Probando conexión...');
-                const testResult = await makeAPIRequest({
-                    action: 'test'
-                });
-                
-                if (!testResult.success) {
-                    throw new Error('Error de conexión con el servidor');
-                }
-                
-                console.log('Conexión exitosa, autenticando...');
-                
-                const result = await makeAPIRequest({
-                    action: 'authenticate',
-                    familyId: familyId,
-                    password: password
-                });
-                
-                if (result.success) {
-                    currentFamilyId = familyId;
-                    
-                    sessionStorage.setItem('familyAuth', JSON.stringify({
-                        familyId: familyId,
-                        password: password,
-                        authenticated: true,
-                        timestamp: new Date().toISOString()
-                    }));
-                    
-                    showSuccess('¡Acceso concedido! Cargando árbol...');
-                    
-                    setTimeout(() => {
-                        showApp();
-                        loadTreeFromCloud();
-                    }, 1000);
-                } else {
-                    showError(result.message || 'Error de autenticación');
-                }
-                
-            } catch (error) {
-                console.error('Error de login:', error);
-                showError('Error de conexión: ' + error.message);
-            } finally {
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = 'Acceder';
-            }
-        }
-
-        function showLogin() {
-            document.getElementById('login-screen').style.display = 'flex';
-            document.getElementById('app-container').style.display = 'none';
-        }
-
-        function showApp() {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('app-container').style.display = 'block';
-            document.getElementById('current-family-id').textContent = currentFamilyId;
-            updateStats();
-        }
-
-        function logout() {
-            sessionStorage.removeItem('familyAuth');
-            currentFamilyId = '';
-            familyTree = {};
-            showLogin();
-        }
-
-        function showError(message) {
-            const errorEl = document.getElementById('error-message');
-            errorEl.textContent = message;
-            errorEl.style.display = 'block';
-            document.getElementById('success-message').style.display = 'none';
-        }
-
-        function showSuccess(message) {
-            const successEl = document.getElementById('success-message');
-            successEl.textContent = message;
-            successEl.style.display = 'block';
-            document.getElementById('error-message').style.display = 'none';
-        }
-
-        function hideMessages() {
-            document.getElementById('error-message').style.display = 'none';
-            document.getElementById('success-message').style.display = 'none';
-        }
-
-        // Función para guardar en la nube
-        async function saveTreeToCloud() {
-            if (!currentFamilyId) return;
-            
-            const savedAuth = JSON.parse(sessionStorage.getItem('familyAuth') || '{}');
-            if (!savedAuth.password) {
-                showSyncStatus('error', 'Error de autenticación');
-                return;
-            }
-            
-            showSyncStatus('syncing', 'Guardando...');
-            
-            try {
-                const result = await makeAPIRequest({
-                    action: 'saveTree',
-                    familyId: currentFamilyId,
-                    password: savedAuth.password,
-                    treeData: familyTree
-                });
-                
-                if (result.success) {
-                    showSyncStatus('success', 'Guardado exitoso');
-                } else {
-                    showSyncStatus('error', 'Error: ' + result.message);
-                }
-                
-            } catch (error) {
-                console.error('Error guardando:', error);
-                showSyncStatus('error', 'Error de conexión');
-            }
-        }
-
-        // Función para cargar desde la nube
-        async function loadTreeFromCloud() {
-            if (!currentFamilyId) return;
-            
-            const savedAuth = JSON.parse(sessionStorage.getItem('familyAuth') || '{}');
-            if (!savedAuth.password) {
-                showSyncStatus('error', 'Error de autenticación');
-                return;
-            }
-            
-            showSyncStatus('syncing', 'Cargando...');
-            
-            try {
-                const result = await makeAPIRequest({
-                    action: 'loadTree',
-                    familyId: currentFamilyId,
-                    password: savedAuth.password
-                });
-                
-                if (result.success) {
-                    familyTree = result.data?.treeData || {};
-                    renderTree();
-                    updateStats();
-                    showSyncStatus('success', 'Árbol cargado');
-                } else {
-                    showSyncStatus('error', 'Error: ' + result.message);
-                }
-                
-            } catch (error) {
-                console.error('Error cargando:', error);
-                showSyncStatus('error', 'Error de conexión');
-            }
-        }
-
-        function showSyncStatus(type, message) {
-            const statusEl = document.getElementById('sync-status');
-            statusEl.className = `sync-status ${type}`;
-            statusEl.textContent = message;
-            statusEl.style.display = 'block';
-            
-            if (type !== 'syncing') {
-                setTimeout(() => {
-                    statusEl.style.display = 'none';
-                }, 3000);
-            }
-        }
-
-        // Gestión de personas
-        function addPerson() {
-            editingPersonId = null;
-            document.getElementById('modal-title').textContent = 'Agregar Nueva Persona';
-            document.getElementById('person-form').reset();
-            document.getElementById('photo-preview').style.display = 'none';
-            document.getElementById('person-modal').style.display = 'block';
-        }
-
-        function editPerson(personId) {
-            const person = familyTree[personId];
-            if (!person) return;
-            
-            editingPersonId = personId;
-            document.getElementById('modal-title').textContent = 'Editar Persona';
-            
-            document.getElementById('person-name').value = person.name || '';
-            document.getElementById('person-birth').value = person.birth || '';
-            document.getElementById('person-death').value = person.death || '';
-            document.getElementById('person-gender').value = person.gender || 'male';
-            document.getElementById('person-description').value = person.description || '';
-            
-            const photoPreview = document.getElementById('photo-preview');
-            if (person.photo) {
-                photoPreview.src = person.photo;
-                photoPreview.style.display = 'block';
-            } else {
-                photoPreview.style.display = 'none';
-            }
-            
-            document.getElementById('person-modal').style.display = 'block';
-        }
-
-        function deletePerson(personId) {
-            if (confirm('¿Estás seguro de que quieres eliminar esta persona?')) {
-                delete familyTree[personId];
-                renderTree();
-                updateStats();
-                saveTreeToCloud();
-            }
-        }
-
-        function manageRelationships(personId) {
-            selectedPersonId = personId;
-            const person = familyTree[personId];
-            document.getElementById('relationship-person-name').textContent = person.name;
-            
-            // Llenar selector de personas
-            const select = document.getElementById('relationship-person-select');
-            select.innerHTML = '<option value="">-- Seleccionar --</option>';
-            
-            Object.keys(familyTree).forEach(id => {
-                if (id !== personId) {
-                    const option = document.createElement('option');
-                    option.value = id;
-                    option.textContent = familyTree[id].name;
-                    select.appendChild(option);
-                }
-            });
-            
-            updateRelationshipsList(personId);
-            document.getElementById('relationship-modal').style.display = 'block';
-        }
-
-        function handlePersonSave(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const personData = {
-                name: formData.get('person-name'),
-                birth: formData.get('person-birth'),
-                death: formData.get('person-death'),
-                gender: formData.get('person-gender'),
-                description: formData.get('person-description'),
-                relationships: {},
-                photo: null
-            };
-            
-            const photoPreview = document.getElementById('photo-preview');
-            if (photoPreview.style.display === 'block') {
-                personData.photo = photoPreview.src;
-            }
-            
-            let personId;
-            if (editingPersonId) {
-                personId = editingPersonId;
-                personData.relationships = familyTree[personId].relationships || {};
-            } else {
-                personId = 'person_' + Date.now();
-            }
-            
-            familyTree[personId] = personData;
-            
-            closeModal();
-            renderTree();
-            updateStats();
-            saveTreeToCloud();
-        }
-
-        function handlePhotoSelect(e) {
-            const file = e.target.files[0];
-            if (file) {
-                handlePhotoFile(file);
-            }
-        }
-
-        function handlePhotoFile(file) {
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const preview = document.getElementById('photo-preview');
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('person-modal').style.display = 'none';
-            editingPersonId = null;
-        }
-
-        function closeRelationshipModal() {
-            document.getElementById('relationship-modal').style.display = 'none';
-            selectedPersonId = null;
-        }
-
-        function addRelationship() {
-            const type = document.getElementById('relationship-type').value;
-            const targetId = document.getElementById('relationship-person-select').value;
-            
-            if (!selectedPersonId || !targetId || !type) {
-                alert('Por favor completa todos los campos');
-                return;
-            }
-            
-            // Agregar relación bidireccional
-            if (!familyTree[selectedPersonId].relationships) {
-                familyTree[selectedPersonId].relationships = {};
-            }
-            if (!familyTree[targetId].relationships) {
-                familyTree[targetId].relationships = {};
-            }
-            
-            familyTree[selectedPersonId].relationships[targetId] = type;
-            
-            // Agregar relación inversa
-            const inverseTypes = {
-                'parent': 'child',
-                'child': 'parent',
-                'sibling': 'sibling',
-                'spouse': 'spouse'
-            };
-            
-            familyTree[targetId].relationships[selectedPersonId] = inverseTypes[type];
-            
-            updateRelationshipsList(selectedPersonId);
-            renderTree();
-            saveTreeToCloud();
-        }
-
-        function updateRelationshipsList(personId) {
-            const listEl = document.getElementById('relationships-list');
-            const person = familyTree[personId];
-            
-            if (!person.relationships || Object.keys(person.relationships).length === 0) {
-                listEl.innerHTML = '<p style="color: #7f8c8d;">No hay relaciones definidas</p>';
-                return;
-            }
-            
-            let html = '';
-            Object.entries(person.relationships).forEach(([relatedId, type]) => {
-                const relatedPerson = familyTree[relatedId];
-                if (relatedPerson) {
-                    const typeNames = {
-                        'parent': 'Padre/Madre',
-                        'child': 'Hijo/Hija',
-                        'sibling': 'Hermano/Hermana',
-                        'spouse': 'Esposo/Esposa'
-                    };
-                    
-                    html += `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f8f9fa; border-radius: 5px; margin-bottom: 5px;">
-                            <span><strong>${relatedPerson.name}</strong> - ${typeNames[type]}</span>
-                            <button onclick="removeRelationship('${personId}', '${relatedId}')" style="background: #e74c3c; color: white; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer;">Eliminar</button>
-                        </div>
-                    `;
-                }
-            });
-            
-            listEl.innerHTML = html;
-        }
-
-        function removeRelationship(personId, targetId) {
-            if (familyTree[personId].relationships) {
-                delete familyTree[personId].relationships[targetId];
-            }
-            if (familyTree[targetId].relationships) {
-                delete familyTree[targetId].relationships[personId];
-            }
-            
-            updateRelationshipsList(personId);
-            renderTree();
-            saveTreeToCloud();
-        }
-
-        function renderTree() {
-            const treeView = document.getElementById('tree-view');
-            
-            if (Object.keys(familyTree).length === 0) {
-                treeView.innerHTML = `
-                    <div class="generation">
-                        <div class="add-person-btn" onclick="addPerson()">
-                            <i>👤</i>
-                            <p>Agregar Primera Persona</p>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Organizar por generaciones
-            const generations = organizeByGenerations();
-            
-            let html = '';
-            generations.forEach((generation, index) => {
-                html += `<div class="generation">`;
-                
-                generation.forEach(personId => {
-                    const person = familyTree[personId];
-                    const initials = person.name.split(' ').map(n => n[0]).join('').substring(0, 2);
-                    
-                    html += `
-                        <div class="person-card" onclick="selectPerson('${personId}')">
-                            <div class="person-actions">
-                                <button class="action-btn" onclick="editPerson('${personId}')" title="Editar">✏️</button>
-                                <button class="action-btn" onclick="manageRelationships('${personId}')" title="Relaciones">👥</button>
-                                <button class="action-btn" onclick="deletePerson('${personId}')" title="Eliminar">🗑️</button>
-                            </div>
-                            <div class="person-photo">
-                                ${person.photo ? `<img src="${person.photo}" alt="${person.name}">` : initials}
-                            </div>
-                            <div class="person-info">
-                                <h3>${person.name}</h3>
-                                <p>
-                                    ${person.birth ? `Nac: ${formatDate(person.birth)}` : ''}
-                                    ${person.death ? `<br>Fall: ${formatDate(person.death)}` : ''}
-                                    ${person.description ? `<br>${person.description.substring(0, 50)}...` : ''}
-                                </p>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                html += `</div>`;
-            });
-            
-            treeView.innerHTML = html;
-        }
-
-        function organizeByGenerations() {
-            // Algoritmo simple para organizar por generaciones basado en relaciones
-            const visited = new Set();
-            const generations = [];
-            
-            // Encontrar personas sin padres (generación 0)
-            const rootPeople = Object.keys(familyTree).filter(id => {
-                const person = familyTree[id];
-                return !person.relationships || !Object.values(person.relationships).includes('parent');
-            });
-            
-            if (rootPeople.length > 0) {
-                generations.push(rootPeople);
-                visited.add(...rootPeople);
-            }
-            
-            // Agregar generaciones subsecuentes
-            let currentGen = 0;
-            while (currentGen < generations.length && visited.size < Object.keys(familyTree).length) {
-                const nextGen = [];
-                
-                generations[currentGen].forEach(parentId => {
-                    const parent = familyTree[parentId];
-                    if (parent.relationships) {
-                        Object.entries(parent.relationships).forEach(([relatedId, type]) => {
-                            if (type === 'child' && !visited.has(relatedId)) {
-                                nextGen.push(relatedId);
-                                visited.add(relatedId);
-                            }
-                        });
-                    }
-                });
-                
-                if (nextGen.length > 0) {
-                    generations.push(nextGen);
-                }
-                currentGen++;
-            }
-            
-            // Agregar personas no conectadas
-            const unconnected = Object.keys(familyTree).filter(id => !visited.has(id));
-            if (unconnected.length > 0) {
-                generations.push(unconnected);
-            }
-            
-            return generations;
-        }
-
-        function selectPerson(personId) {
-            // Remover selección anterior
-            document.querySelectorAll('.person-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            
-            // Seleccionar nueva persona
-            event.currentTarget.classList.add('selected');
-            selectedPersonId = personId;
-        }
-
-        function updateStats() {
-            const totalMembers = Object.keys(familyTree).length;
-            const generations = organizeByGenerations().length;
-            
-            // Contar conexiones
-            let totalConnections = 0;
-            Object.values(familyTree).forEach(person => {
-                if (person.relationships) {
-                    totalConnections += Object.keys(person.relationships).length;
-                }
-            });
-            totalConnections = Math.floor(totalConnections / 2); // Evitar doble conteo
-            
-            document.getElementById('total-members').textContent = totalMembers;
-            document.getElementById('total-generations').textContent = generations;
-            document.getElementById('total-connections').textContent = totalConnections;
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('es-ES', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-            });
-        }
-
-        function exportTree() {
-            const dataStr = JSON.stringify(familyTree, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `arbol_${currentFamilyId}_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-        }
-
+        
         function resetView() {
             renderTree();
             updateStats();
