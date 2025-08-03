@@ -795,67 +795,85 @@
 
         // Autenticación
         async function handleLogin(e) {
-            e.preventDefault();
-            
-            const familyId = document.getElementById('family-id').value.trim();
-            const password = document.getElementById('family-password').value;
-            const loginBtn = document.getElementById('login-btn');
-            const errorMsg = document.getElementById('error-message');
-            const successMsg = document.getElementById('success-message');
-            
-            if (!familyId || !password) {
-                showError('Por favor completa todos los campos');
-                return;
-            }
-            
-            loginBtn.disabled = true;
-            loginBtn.innerHTML = '<div class="loading"></div> Verificando...';
-            hideMessages();
-            
-            try {
-                const response = await fetch(API_CONFIG.url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'authenticate',
-                        familyId: familyId,
-                        password: password
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    currentFamilyId = familyId;
-                    
-                    // Guardar autenticación
-                    sessionStorage.setItem('familyAuth', JSON.stringify({
-                        familyId: familyId,
-                        authenticated: true,
-                        timestamp: Date.now()
-                    }));
-                    
-                    showSuccess('¡Acceso exitoso! Cargando árbol familiar...');
-                    
-                    setTimeout(() => {
-                        showApp();
-                        loadTreeFromCloud();
-                    }, 1500);
-                    
-                } else {
-                    showError(result.message || 'Credenciales incorrectas');
-                }
-                
-            } catch (error) {
-                console.error('Error de autenticación:', error);
-                showError('Error de conexión. Verifica tu internet.');
-            } finally {
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = 'Acceder';
-            }
+    e.preventDefault();
+    
+    const familyId = document.getElementById('family-id').value.trim();
+    const password = document.getElementById('family-password').value;
+    const loginBtn = document.getElementById('login-btn');
+    
+    if (!familyId || !password) {
+        showError('Por favor completa todos los campos');
+        return;
+    }
+    
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<div class="loading"></div> Verificando...';
+    hideMessages();
+    
+    try {
+        // Primero hacer una prueba de conexión
+        const testResponse = await fetch(API_CONFIG.url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'test'
+            })
+        });
+        
+        const testResult = await testResponse.json();
+        
+        if (!testResult.success) {
+            throw new Error('Error de conexión con el servidor');
         }
+        
+        // Ahora autenticar
+        const response = await fetch(API_CONFIG.url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'authenticate',
+                familyId: familyId,
+                password: password
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            currentFamilyId = familyId;
+            
+            // Guardar autenticación con la contraseña
+            sessionStorage.setItem('familyAuth', JSON.stringify({
+                familyId: familyId,
+                password: password, // Guardamos la contraseña para las siguientes peticiones
+                authenticated: true,
+                timestamp: Date.now()
+            }));
+            
+            showSuccess('¡Acceso exitoso! Cargando árbol familiar...');
+            
+            setTimeout(() => {
+                showApp();
+                loadTreeFromCloud();
+            }, 1500);
+            
+        } else {
+            showError(result.message || 'Credenciales incorrectas');
+        }
+        
+    } catch (error) {
+        console.error('Error de autenticación:', error);
+        showError('Error de conexión. Verifica que el Apps Script esté correctamente configurado.');
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = 'Acceder';
+    }
+}
+
 
         function showLogin() {
             document.getElementById('login-screen').style.display = 'flex';
@@ -1356,79 +1374,82 @@
             reader.readAsDataURL(file);
         }
 
-        // Sincronización con Google Sheets
-        async function saveTreeToCloud() {
-            if (Object.keys(familyTree).length === 0) {
-                showSyncStatus('error', '❌ No hay datos para guardar');
-                return;
-            }
-            
-            showSyncStatus('syncing', '⏳ Guardando...');
-            
-            try {
-                const response = await fetch(API_CONFIG.url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'saveTree',
-                        familyId: currentFamilyId,
-                        password: 'miArbol2025!', // En producción, esto debería venir del login
-                        treeData: familyTree
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showSyncStatus('success', '✅ Guardado exitoso');
-                } else {
-                    showSyncStatus('error', '❌ Error: ' + result.message);
-                }
-                
-            } catch (error) {
-                console.error('Error guardando:', error);
-                showSyncStatus('error', '❌ Error de conexión');
-            }
+// Y actualiza las funciones de guardado y carga:
+async function saveTreeToCloud() {
+    if (Object.keys(familyTree).length === 0) {
+        showSyncStatus('error', '❌ No hay datos para guardar');
+        return;
+    }
+    
+    showSyncStatus('syncing', '⏳ Guardando...');
+    
+    const auth = JSON.parse(sessionStorage.getItem('familyAuth') || '{}');
+    
+    try {
+        const response = await fetch(API_CONFIG.url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'saveTree',
+                familyId: auth.familyId,
+                password: auth.password,
+                treeData: familyTree
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSyncStatus('success', '✅ Guardado exitoso');
+        } else {
+            showSyncStatus('error', '❌ Error: ' + result.message);
         }
+        
+    } catch (error) {
+        console.error('Error guardando:', error);
+        showSyncStatus('error', '❌ Error de conexión');
+    }
+}
 
-        async function loadTreeFromCloud() {
-            showSyncStatus('syncing', '⏳ Cargando...');
-            
-            try {
-                const response = await fetch(API_CONFIG.url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'loadTree',
-                        familyId: currentFamilyId,
-                        password: 'miArbol2025!' // En producción, esto debería venir del login
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    familyTree = result.data.treeData || {};
-                    renderTree();
-                    updateStats();
-                    showSyncStatus('success', '✅ Cargado exitoso');
-                } else {
-                    showSyncStatus('error', '❌ Error: ' + result.message);
-                }
-                
-            } catch (error) {
-                console.error('Error cargando:', error);
-                showSyncStatus('error', '❌ Error de conexión');
-                // Mostrar árbol vacío si hay error
-                familyTree = {};
-                renderTree();
-                updateStats();
-            }
+async function loadTreeFromCloud() {
+    showSyncStatus('syncing', '⏳ Cargando...');
+    
+    const auth = JSON.parse(sessionStorage.getItem('familyAuth') || '{}');
+    
+    try {
+        const response = await fetch(API_CONFIG.url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'loadTree',
+                familyId: auth.familyId,
+                password: auth.password
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            familyTree = result.data.treeData || {};
+            renderTree();
+            updateStats();
+            showSyncStatus('success', '✅ Cargado exitoso');
+        } else {
+            showSyncStatus('error', '❌ Error: ' + result.message);
         }
+        
+    } catch (error) {
+        console.error('Error cargando:', error);
+        showSyncStatus('error', '❌ Error de conexión');
+        familyTree = {};
+        renderTree();
+        updateStats();
+    }
+}
 
         function exportTree() {
             if (Object.keys(familyTree).length === 0) {
