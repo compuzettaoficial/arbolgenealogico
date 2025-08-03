@@ -734,7 +734,37 @@
             url: 'https://script.google.com/macros/s/AKfycby_-Ycvn5SmsLFecvVEDwsD1R9dJhHN8KZizJnUiBcB9bFjbYCStTofQOhP7Nw1goid/exec',
             timeout: 30000
         };
+        // Función auxiliar para hacer peticiones
+async function makeAPIRequest(data) {
+    try {
+        console.log('Enviando petición:', data);
+        
+        const response = await fetch(API_CONFIG.url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+            mode: 'cors' // Importante para CORS
+        });
+        
+        console.log('Respuesta status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Resultado:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('Error en petición:', error);
+        throw error;
+    }
+}
 
+        
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
             checkAuthentication();
@@ -794,7 +824,8 @@
         }
 
         // Autenticación
-        async function handleLogin(e) {
+    // Login actualizado
+async function handleLogin(e) {
     e.preventDefault();
     
     const familyId = document.getElementById('family-id').value.trim();
@@ -812,36 +843,23 @@
     
     try {
         // Primero hacer una prueba de conexión
-        const testResponse = await fetch(API_CONFIG.url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'test'
-            })
+        console.log('Probando conexión...');
+        const testResult = await makeAPIRequest({
+            action: 'test'
         });
-        
-        const testResult = await testResponse.json();
         
         if (!testResult.success) {
             throw new Error('Error de conexión con el servidor');
         }
         
-        // Ahora autenticar
-        const response = await fetch(API_CONFIG.url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'authenticate',
-                familyId: familyId,
-                password: password
-            })
-        });
+        console.log('Conexión exitosa, autenticando...');
         
-        const result = await response.json();
+        // Ahora autenticar
+        const result = await makeAPIRequest({
+            action: 'authenticate',
+            familyId: familyId,
+            password: password
+        });
         
         if (result.success) {
             currentFamilyId = familyId;
@@ -849,7 +867,7 @@
             // Guardar autenticación con la contraseña
             sessionStorage.setItem('familyAuth', JSON.stringify({
                 familyId: familyId,
-                password: password, // Guardamos la contraseña para las siguientes peticiones
+                password: password,
                 authenticated: true,
                 timestamp: Date.now()
             }));
@@ -867,7 +885,13 @@
         
     } catch (error) {
         console.error('Error de autenticación:', error);
-        showError('Error de conexión. Verifica que el Apps Script esté correctamente configurado.');
+        if (error.message.includes('CORS')) {
+            showError('Error CORS: Verifica que el Apps Script esté desplegado como "Aplicación web" con acceso "Cualquier persona"');
+        } else if (error.message.includes('Failed to fetch')) {
+            showError('Error de conexión: Verifica la URL del Apps Script');
+        } else {
+            showError('Error: ' + error.message);
+        }
     } finally {
         loginBtn.disabled = false;
         loginBtn.innerHTML = 'Acceder';
@@ -1374,7 +1398,7 @@
             reader.readAsDataURL(file);
         }
 
-// Y actualiza las funciones de guardado y carga:
+// Guardar actualizado
 async function saveTreeToCloud() {
     if (Object.keys(familyTree).length === 0) {
         showSyncStatus('error', '❌ No hay datos para guardar');
@@ -1386,23 +1410,16 @@ async function saveTreeToCloud() {
     const auth = JSON.parse(sessionStorage.getItem('familyAuth') || '{}');
     
     try {
-        const response = await fetch(API_CONFIG.url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'saveTree',
-                familyId: auth.familyId,
-                password: auth.password,
-                treeData: familyTree
-            })
+        const result = await makeAPIRequest({
+            action: 'saveTree',
+            familyId: auth.familyId,
+            password: auth.password,
+            treeData: familyTree
         });
-        
-        const result = await response.json();
         
         if (result.success) {
             showSyncStatus('success', '✅ Guardado exitoso');
+            console.log('Datos guardados:', result.data);
         } else {
             showSyncStatus('error', '❌ Error: ' + result.message);
         }
@@ -1413,31 +1430,25 @@ async function saveTreeToCloud() {
     }
 }
 
+// Cargar actualizado
 async function loadTreeFromCloud() {
     showSyncStatus('syncing', '⏳ Cargando...');
     
     const auth = JSON.parse(sessionStorage.getItem('familyAuth') || '{}');
     
     try {
-        const response = await fetch(API_CONFIG.url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'loadTree',
-                familyId: auth.familyId,
-                password: auth.password
-            })
+        const result = await makeAPIRequest({
+            action: 'loadTree',
+            familyId: auth.familyId,
+            password: auth.password
         });
-        
-        const result = await response.json();
         
         if (result.success) {
             familyTree = result.data.treeData || {};
             renderTree();
             updateStats();
             showSyncStatus('success', '✅ Cargado exitoso');
+            console.log('Datos cargados:', result.data);
         } else {
             showSyncStatus('error', '❌ Error: ' + result.message);
         }
@@ -1448,6 +1459,23 @@ async function loadTreeFromCloud() {
         familyTree = {};
         renderTree();
         updateStats();
+    }
+}
+
+// Función de prueba (opcional)
+async function testConnection() {
+    try {
+        const result = await makeAPIRequest({
+            action: 'test'
+        });
+        
+        if (result.success) {
+            alert('✅ Conexión exitosa: ' + result.message);
+        } else {
+            alert('❌ Error: ' + result.message);
+        }
+    } catch (error) {
+        alert('❌ Error de conexión: ' + error.message);
     }
 }
 
