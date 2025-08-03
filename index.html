@@ -112,6 +112,21 @@
             display: none;
         }
 
+        .test-btn {
+            margin-top: 10px;
+            padding: 8px 15px;
+            background: #f39c12;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .test-btn:hover {
+            background: #e67e22;
+        }
+
         /* Main App Styles */
         .app-container {
             display: none;
@@ -533,7 +548,7 @@
     </style>
 </head>
 <body>
- <!-- Login Screen -->
+    <!-- Login Screen -->
     <div class="login-container" id="login-screen">
         <div class="login-box">
             <h1>🌳 Árbol Genealógico</h1>
@@ -542,12 +557,12 @@
             <form id="login-form">
                 <div class="form-group">
                     <label for="family-id">ID de Familia</label>
-                    <input type="text" id="family-id" placeholder="ejemplo: familia_garcia" required>
+                    <input type="text" id="family-id" name="family-id" placeholder="ejemplo: familia_garcia" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="family-password">Contraseña</label>
-                    <input type="password" id="family-password" placeholder="Contraseña familiar" required>
+                    <input type="password" id="family-password" name="family-password" placeholder="Contraseña familiar" required>
                 </div>
                 
                 <button type="submit" class="login-btn" id="login-btn">
@@ -562,6 +577,9 @@
                 <p style="font-size: 0.9rem; color: #7f8c8d;">
                     ¿Primera vez? Usa: <strong>familia_manrique</strong> / <strong>miArbol2025!</strong>
                 </p>
+                <button type="button" onclick="testConnectionFromLogin()" class="test-btn">
+                    🧪 Probar Conexión
+                </button>
             </div>
         </div>
     </div>
@@ -632,22 +650,22 @@
             <form id="person-form">
                 <div class="form-group">
                     <label for="person-name">Nombre Completo *</label>
-                    <input type="text" id="person-name" required>
+                    <input type="text" id="person-name" name="person-name" required>
                 </div>
 
                 <div class="form-group">
                     <label for="person-birth">Fecha de Nacimiento</label>
-                    <input type="date" id="person-birth">
+                    <input type="date" id="person-birth" name="person-birth">
                 </div>
 
                 <div class="form-group">
                     <label for="person-death">Fecha de Fallecimiento</label>
-                    <input type="date" id="person-death">
+                    <input type="date" id="person-death" name="person-death">
                 </div>
 
                 <div class="form-group">
                     <label for="person-gender">Género</label>
-                    <select id="person-gender">
+                    <select id="person-gender" name="person-gender">
                         <option value="male">Masculino</option>
                         <option value="female">Femenino</option>
                         <option value="other">Otro</option>
@@ -656,7 +674,7 @@
 
                 <div class="form-group">
                     <label for="person-description">Descripción</label>
-                    <textarea id="person-description" placeholder="Información adicional, profesión, lugar de nacimiento, etc."></textarea>
+                    <textarea id="person-description" name="person-description" placeholder="Información adicional, profesión, lugar de nacimiento, etc."></textarea>
                 </div>
 
                 <div class="form-group">
@@ -729,41 +747,80 @@
         let selectedPersonId = null;
         let editingPersonId = null;
 
-        // Configuración de la API
+        // Configuración de la API - ACTUALIZADA
         const API_CONFIG = {
             url: 'https://script.google.com/macros/s/AKfycbydiC1sggoPaeqHOWOpwZz-QGpwzsbxhTV5-YkVVciomXT7jT4YHzVHS2Nbi_rvp4db/exec',
             timeout: 30000
         };
-        // Función auxiliar para hacer peticiones
-async function makeAPIRequest(data) {
-    try {
-        console.log('Enviando petición:', data);
-        
-        const response = await fetch(API_CONFIG.url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
-            mode: 'cors' // Importante para CORS
-        });
-        
-        console.log('Respuesta status:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log('Resultado:', result);
-        return result;
-        
-    } catch (error) {
-        console.error('Error en petición:', error);
-        throw error;
-    }
-}
 
+        // Función auxiliar para hacer peticiones - MEJORADA
+        async function makeAPIRequest(data) {
+            try {
+                console.log('🔍 Diagnóstico detallado:');
+                console.log('URL:', API_CONFIG.url);
+                console.log('Enviando petición:', data);
+                
+                const response = await fetch(API_CONFIG.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                    mode: 'cors'
+                });
+                
+                console.log('📊 Respuesta status:', response.status);
+                console.log('📊 Respuesta OK:', response.ok);
+                console.log('📊 Respuesta headers:', [...response.headers.entries()]);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.log('❌ Error response text:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
+                }
+                
+                const result = await response.json();
+                console.log('✅ Resultado exitoso:', result);
+                return result;
+                
+            } catch (error) {
+                console.error('💥 Error completo:', error);
+                console.error('💥 Error name:', error.name);
+                console.error('💥 Error message:', error.message);
+                console.error('💥 Error stack:', error.stack);
+                
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    throw new Error('🔗 Error de conexión: No se puede conectar al servidor. Verifica:\n1. URL correcta\n2. Apps Script desplegado\n3. Permisos configurados');
+                } else if (error.message.includes('CORS')) {
+                    throw new Error('🚫 Error CORS: El servidor no permite peticiones desde este dominio');
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        // Función de prueba desde login
+        async function testConnectionFromLogin() {
+            console.log('🧪 Probando conexión desde login...');
+            try {
+                showSuccess('Probando conexión...');
+                
+                const result = await makeAPIRequest({
+                    action: 'test'
+                });
+                
+                if (result.success) {
+                    console.log('✅ Conexión exitosa:', result);
+                    showSuccess('✅ Conexión exitosa: ' + result.message);
+                } else {
+                    console.log('❌ Error en test:', result);
+                    showError('❌ Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('❌ Error de conexión:', error);
+                showError('❌ Error: ' + error.message);
+            }
+        }
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
@@ -823,81 +880,69 @@ async function makeAPIRequest(data) {
             });
         }
 
-        // Autenticación
-    // Login actualizado
-async function handleLogin(e) {
-    e.preventDefault();
-    
-    const familyId = document.getElementById('family-id').value.trim();
-    const password = document.getElementById('family-password').value;
-    const loginBtn = document.getElementById('login-btn');
-    
-    if (!familyId || !password) {
-        showError('Por favor completa todos los campos');
-        return;
-    }
-    
-    loginBtn.disabled = true;
-    loginBtn.innerHTML = '<div class="loading"></div> Verificando...';
-    hideMessages();
-    
-    try {
-        // Primero hacer una prueba de conexión
-        console.log('Probando conexión...');
-        const testResult = await makeAPIRequest({
-            action: 'test'
-        });
-        
-        if (!testResult.success) {
-            throw new Error('Error de conexión con el servidor');
+        // Login actualizado
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const familyId = document.getElementById('family-id').value.trim();
+            const password = document.getElementById('family-password').value;
+            const loginBtn = document.getElementById('login-btn');
+            
+            if (!familyId || !password) {
+                showError('Por favor completa todos los campos');
+                return;
+            }
+            
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<div class="loading"></div> Verificando...';
+            hideMessages();
+            
+            try {
+                console.log('Probando conexión...');
+                const testResult = await makeAPIRequest({
+                    action: 'test'
+                });
+                
+                if (!testResult.success) {
+                    throw new Error('Error de conexión con el servidor');
+                }
+                
+                console.log('Conexión exitosa, autenticando...');
+                
+                const result = await makeAPIRequest({
+                    action: 'authenticate',
+                    familyId: familyId,
+                    password: password
+                });
+                
+                if (result.success) {
+                    currentFamilyId = familyId;
+                    
+                    sessionStorage.setItem('familyAuth', JSON.stringify({
+                        familyId: familyId,
+                        password: password,
+                        authenticated: true,
+                        timestamp: new Date().toISOString()
+                    }));
+                    
+                    showSuccess('¡Acceso concedido! Cargando árbol...');
+                    
+                    setTimeout(() => {
+                        showApp();
+                        loadTreeFromCloud();
+                    }, 1000);
+                } else {
+                    showError(result.message || 'Error de autenticación');
+                }
+                
+            } catch (error) {
+                console.error('Error de login:', error);
+                showError('Error de conexión: ' + error.message);
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = 'Acceder';
+            }
         }
-        
-        console.log('Conexión exitosa, autenticando...');
-        
-        // Ahora autenticar
-        const result = await makeAPIRequest({
-            action: 'authenticate',
-            familyId: familyId,
-            password: password
-        });
-        
-        if (result.success) {
-            currentFamilyId = familyId;
-            
-            // Guardar autenticación con la contraseña
-            sessionStorage.setItem('familyAuth', JSON.stringify({
-                familyId: familyId,
-                password: password,
-                authenticated: true,
-                timestamp: Date.now()
-            }));
-            
-            showSuccess('¡Acceso exitoso! Cargando árbol familiar...');
-            
-            setTimeout(() => {
-                showApp();
-                loadTreeFromCloud();
-            }, 1500);
-            
-        } else {
-            showError(result.message || 'Credenciales incorrectas');
-        }
-        
-    } catch (error) {
-        console.error('Error de autenticación:', error);
-        if (error.message.includes('CORS')) {
-            showError('Error CORS: Verifica que el Apps Script esté desplegado como "Aplicación web" con acceso "Cualquier persona"');
-        } else if (error.message.includes('Failed to fetch')) {
-            showError('Error de conexión: Verifica la URL del Apps Script');
-        } else {
-            showError('Error: ' + error.message);
-        }
-    } finally {
-        loginBtn.disabled = false;
-        loginBtn.innerHTML = 'Acceder';
-    }
-}
-
 
         function showLogin() {
             document.getElementById('login-screen').style.display = 'flex';
@@ -913,21 +958,23 @@ async function handleLogin(e) {
 
         function logout() {
             sessionStorage.removeItem('familyAuth');
-            familyTree = {};
             currentFamilyId = '';
+            familyTree = {};
             showLogin();
         }
 
         function showError(message) {
-            const errorMsg = document.getElementById('error-message');
-            errorMsg.textContent = message;
-            errorMsg.style.display = 'block';
+            const errorEl = document.getElementById('error-message');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            document.getElementById('success-message').style.display = 'none';
         }
 
         function showSuccess(message) {
-            const successMsg = document.getElementById('success-message');
-            successMsg.textContent = message;
-            successMsg.style.display = 'block';
+            const successEl = document.getElementById('success-message');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
         }
 
         function hideMessages() {
@@ -935,11 +982,86 @@ async function handleLogin(e) {
             document.getElementById('success-message').style.display = 'none';
         }
 
-        // Gestión del árbol genealógico
-        function generatePersonId() {
-            return 'person_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        // Función para guardar en la nube
+        async function saveTreeToCloud() {
+            if (!currentFamilyId) return;
+            
+            const savedAuth = JSON.parse(sessionStorage.getItem('familyAuth') || '{}');
+            if (!savedAuth.password) {
+                showSyncStatus('error', 'Error de autenticación');
+                return;
+            }
+            
+            showSyncStatus('syncing', 'Guardando...');
+            
+            try {
+                const result = await makeAPIRequest({
+                    action: 'saveTree',
+                    familyId: currentFamilyId,
+                    password: savedAuth.password,
+                    treeData: familyTree
+                });
+                
+                if (result.success) {
+                    showSyncStatus('success', 'Guardado exitoso');
+                } else {
+                    showSyncStatus('error', 'Error: ' + result.message);
+                }
+                
+            } catch (error) {
+                console.error('Error guardando:', error);
+                showSyncStatus('error', 'Error de conexión');
+            }
         }
 
+        // Función para cargar desde la nube
+        async function loadTreeFromCloud() {
+            if (!currentFamilyId) return;
+            
+            const savedAuth = JSON.parse(sessionStorage.getItem('familyAuth') || '{}');
+            if (!savedAuth.password) {
+                showSyncStatus('error', 'Error de autenticación');
+                return;
+            }
+            
+            showSyncStatus('syncing', 'Cargando...');
+            
+            try {
+                const result = await makeAPIRequest({
+                    action: 'loadTree',
+                    familyId: currentFamilyId,
+                    password: savedAuth.password
+                });
+                
+                if (result.success) {
+                    familyTree = result.data?.treeData || {};
+                    renderTree();
+                    updateStats();
+                    showSyncStatus('success', 'Árbol cargado');
+                } else {
+                    showSyncStatus('error', 'Error: ' + result.message);
+                }
+                
+            } catch (error) {
+                console.error('Error cargando:', error);
+                showSyncStatus('error', 'Error de conexión');
+            }
+        }
+
+        function showSyncStatus(type, message) {
+            const statusEl = document.getElementById('sync-status');
+            statusEl.className = `sync-status ${type}`;
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+            
+            if (type !== 'syncing') {
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Gestión de personas
         function addPerson() {
             editingPersonId = null;
             document.getElementById('modal-title').textContent = 'Agregar Nueva Persona';
@@ -955,14 +1077,12 @@ async function handleLogin(e) {
             editingPersonId = personId;
             document.getElementById('modal-title').textContent = 'Editar Persona';
             
-            // Llenar formulario
             document.getElementById('person-name').value = person.name || '';
             document.getElementById('person-birth').value = person.birth || '';
             document.getElementById('person-death').value = person.death || '';
             document.getElementById('person-gender').value = person.gender || 'male';
             document.getElementById('person-description').value = person.description || '';
             
-            // Mostrar foto si existe
             const photoPreview = document.getElementById('photo-preview');
             if (person.photo) {
                 photoPreview.src = person.photo;
@@ -974,396 +1094,72 @@ async function handleLogin(e) {
             document.getElementById('person-modal').style.display = 'block';
         }
 
-        async function handlePersonSave(e) {
+        function deletePerson(personId) {
+            if (confirm('¿Estás seguro de que quieres eliminar esta persona?')) {
+                delete familyTree[personId];
+                renderTree();
+                updateStats();
+                saveTreeToCloud();
+            }
+        }
+
+        function manageRelationships(personId) {
+            selectedPersonId = personId;
+            const person = familyTree[personId];
+            document.getElementById('relationship-person-name').textContent = person.name;
+            
+            // Llenar selector de personas
+            const select = document.getElementById('relationship-person-select');
+            select.innerHTML = '<option value="">-- Seleccionar --</option>';
+            
+            Object.keys(familyTree).forEach(id => {
+                if (id !== personId) {
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = familyTree[id].name;
+                    select.appendChild(option);
+                }
+            });
+            
+            updateRelationshipsList(personId);
+            document.getElementById('relationship-modal').style.display = 'block';
+        }
+
+        function handlePersonSave(e) {
             e.preventDefault();
             
-            const formData = {
-                name: document.getElementById('person-name').value.trim(),
-                birth: document.getElementById('person-birth').value,
-                death: document.getElementById('person-death').value,
-                gender: document.getElementById('person-gender').value,
-                description: document.getElementById('person-description').value.trim(),
-                photo: document.getElementById('photo-preview').src || ''
+            const formData = new FormData(e.target);
+            const personData = {
+                name: formData.get('person-name'),
+                birth: formData.get('person-birth'),
+                death: formData.get('person-death'),
+                gender: formData.get('person-gender'),
+                description: formData.get('person-description'),
+                relationships: {},
+                photo: null
             };
             
-            if (!formData.name) {
-                alert('El nombre es obligatorio');
-                return;
+            const photoPreview = document.getElementById('photo-preview');
+            if (photoPreview.style.display === 'block') {
+                personData.photo = photoPreview.src;
             }
             
             let personId;
             if (editingPersonId) {
                 personId = editingPersonId;
-                // Actualizar persona existente
-                Object.assign(familyTree[personId], formData);
+                personData.relationships = familyTree[personId].relationships || {};
             } else {
-                // Crear nueva persona
-                personId = generatePersonId();
-                familyTree[personId] = {
-                    id: personId,
-                    ...formData,
-                    parents: [],
-                    children: [],
-                    siblings: [],
-                    spouses: []
-                };
+                personId = 'person_' + Date.now();
             }
+            
+            familyTree[personId] = personData;
             
             closeModal();
             renderTree();
             updateStats();
-            
-            // Auto-guardar
-            saveTreeToCloud();
-            
-            showSyncStatus('success', '✅ Persona guardada');
-        }
-
-        function deletePerson(personId) {
-            if (!confirm('¿Estás seguro de que quieres eliminar esta persona? Esta acción no se puede deshacer.')) {
-                return;
-            }
-            
-            const person = familyTree[personId];
-            if (!person) return;
-            
-            // Remover todas las relaciones
-            removeAllRelationsForPerson(personId);
-            
-            // Eliminar la persona
-            delete familyTree[personId];
-            
-            renderTree();
-            updateStats();
-            saveTreeToCloud();
-            
-            showSyncStatus('success', '✅ Persona eliminada');
-        }
-
-        function removeAllRelationsForPerson(personId) {
-            // Iterar sobre todas las personas y remover referencias al personId
-            Object.values(familyTree).forEach(person => {
-                person.parents = person.parents.filter(id => id !== personId);
-                person.children = person.children.filter(id => id !== personId);
-                person.siblings = person.siblings.filter(id => id !== personId);
-                person.spouses = person.spouses.filter(id => id !== personId);
-            });
-        }
-
-        // Gestión de relaciones
-        function manageRelationships(personId) {
-            const person = familyTree[personId];
-            if (!person) return;
-            
-            selectedPersonId = personId;
-            document.getElementById('relationship-person-name').textContent = person.name;
-            
-            // Llenar select con otras personas
-            const select = document.getElementById('relationship-person-select');
-            select.innerHTML = '<option value="">-- Seleccionar --</option>';
-            
-            Object.values(familyTree).forEach(p => {
-                if (p.id !== personId) {
-                    const option = document.createElement('option');
-                    option.value = p.id;
-                    option.textContent = p.name;
-                    select.appendChild(option);
-                }
-            });
-            
-            updateRelationshipsList();
-            document.getElementById('relationship-modal').style.display = 'block';
-        }
-
-        function addRelationship() {
-            const type = document.getElementById('relationship-type').value;
-            const relatedPersonId = document.getElementById('relationship-person-select').value;
-            
-            if (!type || !relatedPersonId || !selectedPersonId) {
-                alert('Por favor selecciona un tipo de relación y una persona');
-                return;
-            }
-            
-            const person1 = familyTree[selectedPersonId];
-            const person2 = familyTree[relatedPersonId];
-            
-            if (!person1 || !person2) return;
-            
-            // Evitar relaciones duplicadas
-            if (isRelationshipExists(selectedPersonId, relatedPersonId, type)) {
-                alert('Esta relación ya existe');
-                return;
-            }
-            
-            // Agregar relación bidireccional
-            switch (type) {
-                case 'parent':
-                    person1.children.push(relatedPersonId);
-                    person2.parents.push(selectedPersonId);
-                    break;
-                case 'child':
-                    person1.parents.push(relatedPersonId);
-                    person2.children.push(selectedPersonId);
-                    break;
-                case 'sibling':
-                    person1.siblings.push(relatedPersonId);
-                    person2.siblings.push(selectedPersonId);
-                    break;
-                case 'spouse':
-                    person1.spouses.push(relatedPersonId);
-                    person2.spouses.push(selectedPersonId);
-                    break;
-            }
-            
-            updateRelationshipsList();
-            renderTree();
-            updateStats();
-            saveTreeToCloud();
-            
-            // Limpiar selección
-            document.getElementById('relationship-person-select').value = '';
-        }
-
-        function isRelationshipExists(personId1, personId2, type) {
-            const person1 = familyTree[personId1];
-            if (!person1) return false;
-            
-            switch (type) {
-                case 'parent':
-                    return person1.children.includes(personId2);
-                case 'child':
-                    return person1.parents.includes(personId2);
-                case 'sibling':
-                    return person1.siblings.includes(personId2);
-                case 'spouse':
-                    return person1.spouses.includes(personId2);
-                default:
-                    return false;
-            }
-        }
-
-        function removeRelationship(personId1, personId2, type) {
-            const person1 = familyTree[personId1];
-            const person2 = familyTree[personId2];
-            
-            if (!person1 || !person2) return;
-            
-            // Remover relación bidireccional
-            switch (type) {
-                case 'parent':
-                    person1.children = person1.children.filter(id => id !== personId2);
-                    person2.parents = person2.parents.filter(id => id !== personId1);
-                    break;
-                case 'child':
-                    person1.parents = person1.parents.filter(id => id !== personId2);
-                    person2.children = person2.children.filter(id => id !== personId1);
-                    break;
-                case 'sibling':
-                    person1.siblings = person1.siblings.filter(id => id !== personId2);
-                    person2.siblings = person2.siblings.filter(id => id !== personId1);
-                    break;
-                case 'spouse':
-                    person1.spouses = person1.spouses.filter(id => id !== personId2);
-                    person2.spouses = person2.spouses.filter(id => id !== personId1);
-                    break;
-            }
-            
-            updateRelationshipsList();
-            renderTree();
-            updateStats();
             saveTreeToCloud();
         }
 
-        function updateRelationshipsList() {
-            if (!selectedPersonId) return;
-            
-            const person = familyTree[selectedPersonId];
-            const container = document.getElementById('relationships-list');
-            container.innerHTML = '';
-            
-            const relationshipTypes = [
-                { key: 'parents', label: 'Padres', type: 'parent' },
-                { key: 'children', label: 'Hijos', type: 'child' },
-                { key: 'siblings', label: 'Hermanos', type: 'sibling' },
-                { key: 'spouses', label: 'Cónyuges', type: 'spouse' }
-            ];
-            
-            relationshipTypes.forEach(relType => {
-                if (person[relType.key] && person[relType.key].length > 0) {
-                    const section = document.createElement('div');
-                    section.style.marginBottom = '15px';
-                    
-                    const title = document.createElement('h4');
-                    title.textContent = relType.label;
-                    title.style.marginBottom = '5px';
-                    section.appendChild(title);
-                    
-                    person[relType.key].forEach(relatedId => {
-                        const relatedPerson = familyTree[relatedId];
-                        if (relatedPerson) {
-                            const item = document.createElement('div');
-                            item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 5px; background: #f8f9fa; margin-bottom: 3px; border-radius: 5px;';
-                            
-                            item.innerHTML = `
-                                <span>${relatedPerson.name}</span>
-                                <button onclick="removeRelationship('${selectedPersonId}', '${relatedId}', '${relType.type}')" 
-                                        style="background: #e74c3c; color: white; border: none; padding: 3px 8px; border-radius: 3px; cursor: pointer;">
-                                    ✕
-                                </button>
-                            `;
-                            
-                            section.appendChild(item);
-                        }
-                    });
-                    
-                    container.appendChild(section);
-                }
-            });
-            
-            if (container.innerHTML === '') {
-                container.innerHTML = '<p style="color: #7f8c8d; font-style: italic;">No hay relaciones establecidas</p>';
-            }
-        }
-
-        // Renderizado del árbol
-        function renderTree() {
-            const container = document.getElementById('tree-view');
-            
-            if (Object.keys(familyTree).length === 0) {
-                container.innerHTML = `
-                    <div class="generation">
-                        <div class="add-person-btn" onclick="addPerson()">
-                            <i>👤</i>
-                            <p>Agregar Primera Persona</p>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Organizar personas por generaciones
-            const generations = organizeByGenerations();
-            
-            container.innerHTML = '';
-            
-            generations.forEach((generation, level) => {
-                if (generation.length > 0) {
-                    const genDiv = document.createElement('div');
-                    genDiv.className = 'generation';
-                    genDiv.style.order = level;
-                    
-                    generation.forEach(personId => {
-                        const personCard = createPersonCard(familyTree[personId]);
-                        genDiv.appendChild(personCard);
-                    });
-                    
-                    container.appendChild(genDiv);
-                }
-            });
-            
-            // Agregar botón para nueva persona
-            const addGenDiv = document.createElement('div');
-            addGenDiv.className = 'generation';
-            addGenDiv.innerHTML = `
-                <div class="add-person-btn" onclick="addPerson()">
-                    <i>➕</i>
-                    <p>Agregar Persona</p>
-                </div>
-            `;
-            container.appendChild(addGenDiv);
-        }
-
-        function organizeByGenerations() {
-            const generations = new Map();
-            const visited = new Set();
-            
-            // Encontrar personas sin padres (raíces)
-            const roots = Object.values(familyTree).filter(person => 
-                !person.parents || person.parents.length === 0
-            );
-            
-            function assignLevel(personId, level) {
-                if (visited.has(personId)) return;
-                visited.add(personId);
-                
-                if (!generations.has(level)) {
-                    generations.set(level, []);
-                }
-                generations.get(level).push(personId);
-                
-                const person = familyTree[personId];
-                if (person && person.children) {
-                    person.children.forEach(childId => {
-                        assignLevel(childId, level + 1);
-                    });
-                }
-            }
-            
-            // Asignar niveles comenzando desde las raíces
-            roots.forEach(root => assignLevel(root.id, 0));
-            
-            // Asignar personas restantes (en caso de ciclos o personas aisladas)
-            Object.keys(familyTree).forEach(personId => {
-                if (!visited.has(personId)) {
-                    assignLevel(personId, 0);
-                }
-            });
-            
-            return generations;
-        }
-
-        function createPersonCard(person) {
-            const card = document.createElement('div');
-            card.className = 'person-card';
-            card.onclick = () => selectPerson(person.id);
-            
-            const photoInitial = person.name ? person.name.charAt(0).toUpperCase() : '?';
-            const photoElement = person.photo ? 
-                `<img src="${person.photo}" alt="${person.name}">` :
-                `<div class="person-photo empty">${photoInitial}</div>`;
-            
-            const birthYear = person.birth ? new Date(person.birth).getFullYear() : '';
-            const deathYear = person.death ? new Date(person.death).getFullYear() : '';
-            const yearsText = birthYear || deathYear ? `(${birthYear}${deathYear ? ` - ${deathYear}` : ''})` : '';
-            
-            card.innerHTML = `
-                <div class="person-actions">
-                    <button class="action-btn" onclick="event.stopPropagation(); editPerson('${person.id}')" title="Editar">
-                        ✏️
-                    </button>
-                    <button class="action-btn" onclick="event.stopPropagation(); manageRelationships('${person.id}')" title="Relaciones">
-                        🔗
-                    </button>
-                    <button class="action-btn" onclick="event.stopPropagation(); deletePerson('${person.id}')" title="Eliminar">
-                        🗑️
-                    </button>
-                </div>
-                <div class="person-photo">
-                    ${photoElement}
-                </div>
-                <div class="person-info">
-                    <h3>${person.name || 'Sin nombre'}</h3>
-                    <p>${yearsText}</p>
-                    ${person.description ? `<p style="margin-top: 8px; font-size: 0.8rem;">${person.description}</p>` : ''}
-                </div>
-            `;
-            
-            return card;
-        }
-
-        function selectPerson(personId) {
-            // Remover selección anterior
-            document.querySelectorAll('.person-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            
-            // Seleccionar nueva persona
-            const card = event.currentTarget;
-            card.classList.add('selected');
-            selectedPersonId = personId;
-        }
-
-        // Manejo de fotos
         function handlePhotoSelect(e) {
             const file = e.target.files[0];
             if (file) {
@@ -1372,185 +1168,17 @@ async function handleLogin(e) {
         }
 
         function handlePhotoFile(file) {
-            if (!file.type.startsWith('image/')) {
-                alert('Por favor selecciona un archivo de imagen válido');
-                return;
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('photo-preview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
             }
-            
-            if (file.size > 5 * 1024 * 1024) { // 5MB límite
-                alert('La imagen es demasiado grande. Máximo 5MB');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const photoPreview = document.getElementById('photo-preview');
-                photoPreview.src = e.target.result;
-                photoPreview.style.display = 'block';
-                
-                // Actualizar el upload area
-                const uploadArea = document.getElementById('photo-upload');
-                uploadArea.innerHTML = `
-                    <p>✅ Imagen cargada</p>
-                    <p style="font-size: 0.8rem; color: #27ae60;">Hacer clic para cambiar</p>
-                `;
-            };
-            reader.readAsDataURL(file);
         }
 
-// Guardar actualizado
-async function saveTreeToCloud() {
-    if (Object.keys(familyTree).length === 0) {
-        showSyncStatus('error', '❌ No hay datos para guardar');
-        return;
-    }
-    
-    showSyncStatus('syncing', '⏳ Guardando...');
-    
-    const auth = JSON.parse(sessionStorage.getItem('familyAuth') || '{}');
-    
-    try {
-        const result = await makeAPIRequest({
-            action: 'saveTree',
-            familyId: auth.familyId,
-            password: auth.password,
-            treeData: familyTree
-        });
-        
-        if (result.success) {
-            showSyncStatus('success', '✅ Guardado exitoso');
-            console.log('Datos guardados:', result.data);
-        } else {
-            showSyncStatus('error', '❌ Error: ' + result.message);
-        }
-        
-    } catch (error) {
-        console.error('Error guardando:', error);
-        showSyncStatus('error', '❌ Error de conexión');
-    }
-}
-
-// Cargar actualizado
-async function loadTreeFromCloud() {
-    showSyncStatus('syncing', '⏳ Cargando...');
-    
-    const auth = JSON.parse(sessionStorage.getItem('familyAuth') || '{}');
-    
-    try {
-        const result = await makeAPIRequest({
-            action: 'loadTree',
-            familyId: auth.familyId,
-            password: auth.password
-        });
-        
-        if (result.success) {
-            familyTree = result.data.treeData || {};
-            renderTree();
-            updateStats();
-            showSyncStatus('success', '✅ Cargado exitoso');
-            console.log('Datos cargados:', result.data);
-        } else {
-            showSyncStatus('error', '❌ Error: ' + result.message);
-        }
-        
-    } catch (error) {
-        console.error('Error cargando:', error);
-        showSyncStatus('error', '❌ Error de conexión');
-        familyTree = {};
-        renderTree();
-        updateStats();
-    }
-}
-
-// Función de prueba (opcional)
-async function testConnection() {
-    try {
-        const result = await makeAPIRequest({
-            action: 'test'
-        });
-        
-        if (result.success) {
-            alert('✅ Conexión exitosa: ' + result.message);
-        } else {
-            alert('❌ Error: ' + result.message);
-        }
-    } catch (error) {
-        alert('❌ Error de conexión: ' + error.message);
-    }
-}
-
-        function exportTree() {
-            if (Object.keys(familyTree).length === 0) {
-                alert('No hay datos para exportar');
-                return;
-            }
-            
-            const exportData = {
-                familyId: currentFamilyId,
-                exportDate: new Date().toISOString(),
-                version: '1.0',
-                familyTree: familyTree
-            };
-            
-            const dataStr = JSON.stringify(exportData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `arbol_genealogico_${currentFamilyId}_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            
-            showSyncStatus('success', '✅ Exportado correctamente');
-        }
-
-        function resetView() {
-            // Limpiar selecciones
-            selectedPersonId = null;
-            document.querySelectorAll('.person-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            
-            // Re-renderizar árbol
-            renderTree();
-            updateStats();
-            
-            showSyncStatus('success', '✅ Vista restablecida');
-        }
-
-        function updateStats() {
-            const totalMembers = Object.keys(familyTree).length;
-            const generations = organizeByGenerations();
-            const totalGenerations = generations.size;
-            
-            // Contar conexiones (relaciones)
-            let totalConnections = 0;
-            Object.values(familyTree).forEach(person => {
-                totalConnections += (person.parents?.length || 0);
-                totalConnections += (person.children?.length || 0);
-                totalConnections += (person.siblings?.length || 0);
-                totalConnections += (person.spouses?.length || 0);
-            });
-            // Dividir por 2 porque cada relación se cuenta dos veces
-            totalConnections = Math.floor(totalConnections / 2);
-            
-            document.getElementById('total-members').textContent = totalMembers;
-            document.getElementById('total-generations').textContent = totalGenerations;
-            document.getElementById('total-connections').textContent = totalConnections;
-        }
-
-        function showSyncStatus(type, message) {
-            const status = document.getElementById('sync-status');
-            status.className = `sync-status ${type}`;
-            status.textContent = message;
-            status.style.display = 'block';
-            
-            // Auto-ocultar después de 3 segundos
-            setTimeout(() => {
-                status.style.display = 'none';
-            }, 3000);
-        }
-
-        // Gestión de modales
         function closeModal() {
             document.getElementById('person-modal').style.display = 'none';
             editingPersonId = null;
@@ -1561,168 +1189,247 @@ async function testConnection() {
             selectedPersonId = null;
         }
 
-        // Funciones de utilidad
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('es-ES');
-        }
-
-        function calculateAge(birthDate, deathDate = null) {
-            if (!birthDate) return null;
+        function addRelationship() {
+            const type = document.getElementById('relationship-type').value;
+            const targetId = document.getElementById('relationship-person-select').value;
             
-            const birth = new Date(birthDate);
-            const end = deathDate ? new Date(deathDate) : new Date();
-            
-            let age = end.getFullYear() - birth.getFullYear();
-            const monthDiff = end.getMonth() - birth.getMonth();
-            
-            if (monthDiff < 0 || (monthDiff === 0 && end.getDate() < birth.getDate())) {
-                age--;
-            }
-            
-            return age;
-        }
-
-        // Funciones de importación
-        function importTree() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = handleImportFile;
-            input.click();
-        }
-
-        function handleImportFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importData = JSON.parse(e.target.result);
-                    
-                    if (importData.familyTree && typeof importData.familyTree === 'object') {
-                        familyTree = importData.familyTree;
-                        renderTree();
-                        updateStats();
-                        saveTreeToCloud();
-                        showSyncStatus('success', '✅ Importación exitosa');
-                    } else {
-                        throw new Error('Formato de archivo inválido');
-                    }
-                } catch (error) {
-                    console.error('Error importando:', error);
-                    alert('Error al importar el archivo. Verifica que sea un archivo JSON válido.');
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        // Funciones de búsqueda
-        function searchPerson() {
-            const searchTerm = prompt('Buscar persona por nombre:');
-            if (!searchTerm) return;
-            
-            const results = Object.values(familyTree).filter(person =>
-                person.name.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-            
-            if (results.length === 0) {
-                alert('No se encontraron personas con ese nombre');
+            if (!selectedPersonId || !targetId || !type) {
+                alert('Por favor completa todos los campos');
                 return;
             }
             
-            if (results.length === 1) {
-                highlightPerson(results[0].id);
-            } else {
-                // Mostrar múltiples resultados
-                let message = 'Se encontraron múltiples personas:\n\n';
-                results.forEach((person, index) => {
-                    message += `${index + 1}. ${person.name}`;
-                    if (person.birth) {
-                        message += ` (${new Date(person.birth).getFullYear()})`;
-                    }
-                    message += '\n';
-                });
-                
-                alert(message);
+            // Agregar relación bidireccional
+            if (!familyTree[selectedPersonId].relationships) {
+                familyTree[selectedPersonId].relationships = {};
             }
+            if (!familyTree[targetId].relationships) {
+                familyTree[targetId].relationships = {};
+            }
+            
+            familyTree[selectedPersonId].relationships[targetId] = type;
+            
+            // Agregar relación inversa
+            const inverseTypes = {
+                'parent': 'child',
+                'child': 'parent',
+                'sibling': 'sibling',
+                'spouse': 'spouse'
+            };
+            
+            familyTree[targetId].relationships[selectedPersonId] = inverseTypes[type];
+            
+            updateRelationshipsList(selectedPersonId);
+            renderTree();
+            saveTreeToCloud();
         }
 
-        function highlightPerson(personId) {
-            // Remover selecciones anteriores
+        function updateRelationshipsList(personId) {
+            const listEl = document.getElementById('relationships-list');
+            const person = familyTree[personId];
+            
+            if (!person.relationships || Object.keys(person.relationships).length === 0) {
+                listEl.innerHTML = '<p style="color: #7f8c8d;">No hay relaciones definidas</p>';
+                return;
+            }
+            
+            let html = '';
+            Object.entries(person.relationships).forEach(([relatedId, type]) => {
+                const relatedPerson = familyTree[relatedId];
+                if (relatedPerson) {
+                    const typeNames = {
+                        'parent': 'Padre/Madre',
+                        'child': 'Hijo/Hija',
+                        'sibling': 'Hermano/Hermana',
+                        'spouse': 'Esposo/Esposa'
+                    };
+                    
+                    html += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f8f9fa; border-radius: 5px; margin-bottom: 5px;">
+                            <span><strong>${relatedPerson.name}</strong> - ${typeNames[type]}</span>
+                            <button onclick="removeRelationship('${personId}', '${relatedId}')" style="background: #e74c3c; color: white; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer;">Eliminar</button>
+                        </div>
+                    `;
+                }
+            });
+            
+            listEl.innerHTML = html;
+        }
+
+        function removeRelationship(personId, targetId) {
+            if (familyTree[personId].relationships) {
+                delete familyTree[personId].relationships[targetId];
+            }
+            if (familyTree[targetId].relationships) {
+                delete familyTree[targetId].relationships[personId];
+            }
+            
+            updateRelationshipsList(personId);
+            renderTree();
+            saveTreeToCloud();
+        }
+
+        function renderTree() {
+            const treeView = document.getElementById('tree-view');
+            
+            if (Object.keys(familyTree).length === 0) {
+                treeView.innerHTML = `
+                    <div class="generation">
+                        <div class="add-person-btn" onclick="addPerson()">
+                            <i>👤</i>
+                            <p>Agregar Primera Persona</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Organizar por generaciones
+            const generations = organizeByGenerations();
+            
+            let html = '';
+            generations.forEach((generation, index) => {
+                html += `<div class="generation">`;
+                
+                generation.forEach(personId => {
+                    const person = familyTree[personId];
+                    const initials = person.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+                    
+                    html += `
+                        <div class="person-card" onclick="selectPerson('${personId}')">
+                            <div class="person-actions">
+                                <button class="action-btn" onclick="editPerson('${personId}')" title="Editar">✏️</button>
+                                <button class="action-btn" onclick="manageRelationships('${personId}')" title="Relaciones">👥</button>
+                                <button class="action-btn" onclick="deletePerson('${personId}')" title="Eliminar">🗑️</button>
+                            </div>
+                            <div class="person-photo">
+                                ${person.photo ? `<img src="${person.photo}" alt="${person.name}">` : initials}
+                            </div>
+                            <div class="person-info">
+                                <h3>${person.name}</h3>
+                                <p>
+                                    ${person.birth ? `Nac: ${formatDate(person.birth)}` : ''}
+                                    ${person.death ? `<br>Fall: ${formatDate(person.death)}` : ''}
+                                    ${person.description ? `<br>${person.description.substring(0, 50)}...` : ''}
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+            });
+            
+            treeView.innerHTML = html;
+        }
+
+        function organizeByGenerations() {
+            // Algoritmo simple para organizar por generaciones basado en relaciones
+            const visited = new Set();
+            const generations = [];
+            
+            // Encontrar personas sin padres (generación 0)
+            const rootPeople = Object.keys(familyTree).filter(id => {
+                const person = familyTree[id];
+                return !person.relationships || !Object.values(person.relationships).includes('parent');
+            });
+            
+            if (rootPeople.length > 0) {
+                generations.push(rootPeople);
+                visited.add(...rootPeople);
+            }
+            
+            // Agregar generaciones subsecuentes
+            let currentGen = 0;
+            while (currentGen < generations.length && visited.size < Object.keys(familyTree).length) {
+                const nextGen = [];
+                
+                generations[currentGen].forEach(parentId => {
+                    const parent = familyTree[parentId];
+                    if (parent.relationships) {
+                        Object.entries(parent.relationships).forEach(([relatedId, type]) => {
+                            if (type === 'child' && !visited.has(relatedId)) {
+                                nextGen.push(relatedId);
+                                visited.add(relatedId);
+                            }
+                        });
+                    }
+                });
+                
+                if (nextGen.length > 0) {
+                    generations.push(nextGen);
+                }
+                currentGen++;
+            }
+            
+            // Agregar personas no conectadas
+            const unconnected = Object.keys(familyTree).filter(id => !visited.has(id));
+            if (unconnected.length > 0) {
+                generations.push(unconnected);
+            }
+            
+            return generations;
+        }
+
+        function selectPerson(personId) {
+            // Remover selección anterior
             document.querySelectorAll('.person-card').forEach(card => {
                 card.classList.remove('selected');
             });
             
-            // Buscar y seleccionar la persona
-            const cards = document.querySelectorAll('.person-card');
-            cards.forEach(card => {
-                const editBtn = card.querySelector('.action-btn[onclick*="editPerson"]');
-                if (editBtn && editBtn.getAttribute('onclick').includes(personId)) {
-                    card.classList.add('selected');
-                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            });
-            
+            // Seleccionar nueva persona
+            event.currentTarget.classList.add('selected');
             selectedPersonId = personId;
         }
 
-        // Validaciones
-        function validatePersonData(person) {
-            const errors = [];
+        function updateStats() {
+            const totalMembers = Object.keys(familyTree).length;
+            const generations = organizeByGenerations().length;
             
-            if (!person.name || person.name.trim() === '') {
-                errors.push('El nombre es obligatorio');
-            }
-            
-            if (person.birth && person.death) {
-                const birthDate = new Date(person.birth);
-                const deathDate = new Date(person.death);
-                if (deathDate <= birthDate) {
-                    errors.push('La fecha de fallecimiento debe ser posterior a la de nacimiento');
+            // Contar conexiones
+            let totalConnections = 0;
+            Object.values(familyTree).forEach(person => {
+                if (person.relationships) {
+                    totalConnections += Object.keys(person.relationships).length;
                 }
-            }
+            });
+            totalConnections = Math.floor(totalConnections / 2); // Evitar doble conteo
             
-            if (person.birth) {
-                const birthDate = new Date(person.birth);
-                const now = new Date();
-                if (birthDate > now) {
-                    errors.push('La fecha de nacimiento no puede ser futura');
-                }
-            }
-            
-            return errors;
+            document.getElementById('total-members').textContent = totalMembers;
+            document.getElementById('total-generations').textContent = generations;
+            document.getElementById('total-connections').textContent = totalConnections;
         }
 
-        // Auto-guardado
-        let autoSaveInterval;
-        
-        function startAutoSave() {
-            // Guardar automáticamente cada 5 minutos
-            autoSaveInterval = setInterval(() => {
-                if (Object.keys(familyTree).length > 0) {
-                    saveTreeToCloud();
-                }
-            }, 5 * 60 * 1000);
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-ES', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
         }
 
-        function stopAutoSave() {
-            if (autoSaveInterval) {
-                clearInterval(autoSaveInterval);
+        function exportTree() {
+            const dataStr = JSON.stringify(familyTree, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `arbol_${currentFamilyId}_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+        }
+
+        function resetView() {
+            renderTree();
+            updateStats();
+        }
+
+        // Auto-guardado cada 5 minutos
+        setInterval(() => {
+            if (currentFamilyId && Object.keys(familyTree).length > 0) {
+                saveTreeToCloud();
             }
-        }
-
-        // Iniciar auto-guardado cuando se carga la app
-        document.addEventListener('DOMContentLoaded', function() {
-            startAutoSave();
-        });
-
-        // Detener auto-guardado al cerrar
-        window.addEventListener('beforeunload', function() {
-            stopAutoSave();
-        });
-</script>
+        }, 5 * 60 * 1000);
+    </script>
 </body>
 </html>
