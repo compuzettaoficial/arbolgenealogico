@@ -50,6 +50,8 @@
         <button id="resetZoom" class="btn-control">↺ Reset</button>
         <button id="expandAll" class="btn-control">📂 Expandir</button>
         <button id="collapseAll" class="btn-control">📁 Colapsar</button>
+        <input type="file" id="fileUpload" accept=".json" style="display: none;" onchange="handleFileUpload(event)">
+        <button class="btn-control" onclick="document.getElementById('fileUpload').click()">📁 Importar JSON</button>
       </div>
       <div id="treeContainer" class="tree-canvas"></div>
     </div>
