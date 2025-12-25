@@ -1,77 +1,58 @@
-// Base de datos local (puedes conectar con Google Sheets API después)
+// Base de datos
 let persons = [];
 let relations = [];
 
-// Datos de ejemplo iniciales
-const INITIAL_DATA = {
-  persons: [
-    {
-      id: 'P0001',
-      nombre: 'Custodio',
-      apellidos: 'Manrique Pinedo',
-      genero: 'Masculino',
-      fechaNacimiento: '',
-      lugarNacimiento: '',
-      fechaMuerte: '',
-      notas: '',
-      photo: ''
-    },
-    {
-      id: 'P0002',
-      nombre: 'Leonor',
-      apellidos: 'Alvarado Fortalatino',
-      genero: 'Femenino',
-      fechaNacimiento: '',
-      lugarNacimiento: '',
-      fechaMuerte: '',
-      notas: '',
-      photo: ''
-    },
-    {
-      id: 'P0003',
-      nombre: 'Mario',
-      apellidos: 'Manrique Alvarado',
-      genero: 'Masculino',
-      fechaNacimiento: '',
-      lugarNacimiento: '',
-      fechaMuerte: '',
-      notas: '',
-      photo: ''
-    }
-  ],
-  relations: [
-    { personId1: 'P0001', personId2: 'P0002', type: 'esposa' },
-    { personId1: 'P0001', personId2: 'P0003', type: 'hijo' },
-    { personId1: 'P0002', personId2: 'P0003', type: 'hijo' }
-  ]
-};
+// Cargar datos desde archivo JSON
+async function loadDataFromJSON() {
+  try {
+    const response = await fetch('data/family-data.json');
+    if (!response.ok) throw new Error('No se pudo cargar el archivo');
+    
+    const data = await response.json();
+    persons = data.persons || [];
+    relations = data.relations || [];
+    
+    // Guardar en localStorage como respaldo
+    localStorage.setItem('familyPersons', JSON.stringify(persons));
+    localStorage.setItem('familyRelations', JSON.stringify(relations));
+    
+    return true;
+  } catch (error) {
+    console.error('Error cargando JSON:', error);
+    // Intentar cargar desde localStorage
+    return loadFromLocalStorage();
+  }
+}
 
-// Inicializar datos
-function initializeData() {
+function loadFromLocalStorage() {
   const savedPersons = localStorage.getItem('familyPersons');
   const savedRelations = localStorage.getItem('familyRelations');
   
   if (savedPersons && savedRelations) {
     persons = JSON.parse(savedPersons);
     relations = JSON.parse(savedRelations);
-  } else {
-    persons = [...INITIAL_DATA.persons];
-    relations = [...INITIAL_DATA.relations];
-    saveData();
+    return true;
   }
+  
+  return false;
+}
+
+async function loadData() {
+  const loaded = await loadDataFromJSON();
+  
+  if (!loaded) {
+    showMessage('No se encontraron datos. Por favor sube el archivo family-data.json', 'error');
+  }
+  
+  renderPersonsList();
+  renderRelationsList();
+  updatePersonSelects();
+  renderTree();
 }
 
 function saveData() {
   localStorage.setItem('familyPersons', JSON.stringify(persons));
   localStorage.setItem('familyRelations', JSON.stringify(relations));
-}
-
-function loadData() {
-  initializeData();
-  renderPersonsList();
-  renderRelationsList();
-  updatePersonSelects();
-  renderTree();
 }
 
 // CRUD Personas
@@ -90,12 +71,10 @@ function savePerson(personData) {
 }
 
 function deletePerson(personId) {
-  // Eliminar relaciones asociadas
   relations = relations.filter(r => 
     r.personId1 !== personId && r.personId2 !== personId
   );
   
-  // Eliminar persona
   persons = persons.filter(p => p.id !== personId);
   
   saveData();
@@ -104,7 +83,6 @@ function deletePerson(personId) {
 
 // CRUD Relaciones
 function saveRelation(relationData) {
-  // Verificar duplicados
   const isDuplicate = relations.some(r =>
     (r.personId1 === relationData.personId1 && 
      r.personId2 === relationData.personId2 && 
@@ -212,21 +190,33 @@ function findRootPersons() {
   return rootGroups;
 }
 
-// Exportar datos
-function exportData() {
-  const dataStr = JSON.stringify({ persons, relations }, null, 2);
+// Exportar datos actuales (desde navegador)
+function exportCurrentData() {
+  const dataStr = JSON.stringify({ 
+    persons, 
+    relations,
+    exportDate: new Date().toISOString(),
+    version: "1.0"
+  }, null, 2);
+  
   const dataBlob = new Blob([dataStr], { type: 'application/json' });
   const url = URL.createObjectURL(dataBlob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'arbol-genealogico.json';
+  link.download = 'family-data.json';
   link.click();
+  URL.revokeObjectURL(url);
+  
+  showMessage('Datos exportados correctamente', 'success');
 }
 
-// Importar datos
-function importData(file) {
+// Importar archivo JSON desde navegador
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
   const reader = new FileReader();
-  reader.onload = (e) => {
+  reader.onload = function(e) {
     try {
       const data = JSON.parse(e.target.result);
       if (data.persons && data.relations) {
