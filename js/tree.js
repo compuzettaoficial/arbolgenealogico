@@ -262,19 +262,37 @@ function renderTree() {
     return;
   }
   
+  // Calcular el número máximo de descendientes para centrar mejor
+  let maxWidth = 0;
+  let totalHeight = 100;
+  
+  roots.forEach(root => {
+    const descendants = root.type === 'couple' 
+      ? getCombinedChildren(root.person1.id, root.person2.id).length 
+      : getChildren(root.person).length;
+    maxWidth = Math.max(maxWidth, descendants);
+  });
+  
+  // Iniciar más a la derecha para evitar cortes
+  const startX = Math.max(500, maxWidth * 110 + 100);
   let yOffset = 50;
   
   roots.forEach((root, index) => {
     if (index > 0) yOffset += 50;
     
     if (root.type === 'couple') {
-      yOffset = renderCouple(root.person1, root.person2, 100, yOffset);
+      yOffset = renderCouple(root.person1, root.person2, startX, yOffset);
     } else {
-      yOffset = renderSinglePerson(root.person, 100, yOffset);
+      yOffset = renderSinglePerson(root.person, startX, yOffset);
     }
     
     yOffset += 100;
+    totalHeight = yOffset;
   });
+  
+  // Ajustar el tamaño del contenedor dinámicamente
+  treeContainer.style.minWidth = (startX + maxWidth * 220 + 500) + 'px';
+  treeContainer.style.minHeight = totalHeight + 'px';
 }
 
 // NUEVA FUNCIÓN: Determinar el orden correcto de una pareja
