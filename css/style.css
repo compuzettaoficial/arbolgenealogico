@@ -477,3 +477,84 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* Controles flotantes fijos */
+.tree-controls-floating {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+}
+
+.tree-controls-floating button {
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 8px;
+  background: white;
+  color: #333;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.tree-controls-floating button:hover {
+  background: #667eea;
+  color: white;
+  transform: scale(1.1);
+}
+
+.tree-controls-floating button:active {
+  transform: scale(0.95);
+}
+
+.control-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 5px 0;
+}
+
+/* Cursor de mano cuando se puede arrastrar */
+.tree-canvas {
+  cursor: grab;
+}
+
+.tree-canvas:active {
+  cursor: grabbing;
+}
+
+/* Asegurar que los nodos sean clickeables */
+.tree-node {
+  pointer-events: none;
+}
+
+.tree-node .node-card {
+  pointer-events: auto;
+}
+
+/* Esconder controles originales en móvil */
+@media (max-width: 768px) {
+  .controls {
+    display: none;
+  }
+  
+  .tree-controls-floating {
+    bottom: 15px;
+    right: 15px;
+    padding: 10px;
+  }
+  
+  .tree-controls-floating button {
+    width: 45px;
+    height: 45px;
+    font-size: 18px;
+  }
+}
