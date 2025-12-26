@@ -9,6 +9,12 @@ const relationsList = document.getElementById('relationsList');
 let treeScale = 1;
 let expandedNodes = new Set();
 
+// Configuración de espaciado
+const NODE_WIDTH = 220;
+const NODE_HEIGHT = 200;
+const VERTICAL_GAP = 100;
+const HORIZONTAL_GAP = 30;
+
 // Configurar event listeners para admin
 if (personForm) {
   personForm.addEventListener('submit', handlePersonSubmit);
@@ -51,13 +57,12 @@ document.getElementById('collapseAll').addEventListener('click', () => {
 
 function updateTreeScale() {
   treeContainer.style.transform = `scale(${treeScale})`;
-  treeContainer.style.transformOrigin = 'top left';
+  treeContainer.style.transformOrigin = 'top center';
 }
 
-// FORMULARIO PERSONAS
+// FORMULARIOS (mantener igual)
 function handlePersonSubmit(e) {
   e.preventDefault();
-  
   if (!isAdmin()) {
     showMessage('No tienes permisos', 'error');
     return;
@@ -118,10 +123,8 @@ function handleDeletePerson(personId) {
   }
 }
 
-// FORMULARIO RELACIONES
 function handleRelationSubmit(e) {
   e.preventDefault();
-  
   if (!isAdmin()) {
     showMessage('No tienes permisos', 'error');
     return;
@@ -158,7 +161,7 @@ function handleDeleteRelation(personId1, personId2, type) {
   }
 }
 
-// RENDERIZAR LISTAS (ADMIN)
+// RENDERIZAR LISTAS
 function renderPersonsList() {
   if (!personsList) return;
   
@@ -244,7 +247,8 @@ function updatePersonSelects() {
   });
 }
 
-// ===== RENDERIZAR ÁRBOL VISUAL - NUEVA LÓGICA CORREGIDA =====
+// ===== NUEVO ALGORITMO DE RENDERIZADO =====
+
 function renderTree() {
   if (!treeContainer) return;
   
@@ -262,140 +266,236 @@ function renderTree() {
     return;
   }
   
-  // Calcular el número máximo de descendientes para centrar mejor
+  let currentY = 50;
   let maxWidth = 0;
-  let totalHeight = 100;
-  
-  roots.forEach(root => {
-    const descendants = root.type === 'couple' 
-      ? getCombinedChildren(root.person1.id, root.person2.id).length 
-      : getChildren(root.person).length;
-    maxWidth = Math.max(maxWidth, descendants);
-  });
-  
-  // Iniciar más a la derecha para evitar cortes
-  const startX = Math.max(500, maxWidth * 110 + 100);
-  let yOffset = 50;
   
   roots.forEach((root, index) => {
-    if (index > 0) yOffset += 50;
+    if (index > 0) currentY += 150;
     
+    let layout;
     if (root.type === 'couple') {
-      yOffset = renderCouple(root.person1, root.person2, startX, yOffset);
+      layout = layoutCouple(root.person1, root.person2, 0, currentY);
     } else {
-      yOffset = renderSinglePerson(root.person, startX, yOffset);
+      layout = layoutPerson(root.person, 0, currentY);
     }
     
-    yOffset += 100;
-    totalHeight = yOffset;
+    drawLayout(layout);
+    
+    currentY = layout.bounds.bottom + VERTICAL_GAP;
+    maxWidth = Math.max(maxWidth, layout.bounds.right - layout.bounds.left);
   });
   
-  // Ajustar el tamaño del contenedor dinámicamente
-  treeContainer.style.minWidth = (startX + maxWidth * 220 + 500) + 'px';
-  treeContainer.style.minHeight = totalHeight + 'px';
+  // Ajustar tamaño del contenedor
+  treeContainer.style.minWidth = (maxWidth + 200) + 'px';
+  treeContainer.style.minHeight = (currentY + 100) + 'px';
+  
+  // Centrar horizontalmente
+  const offset = Math.max(0, (treeContainer.clientWidth - maxWidth) / 2);
+  Array.from(treeContainer.children).forEach(child => {
+    if (child.style.left) {
+      const currentLeft = parseInt(child.style.left);
+      child.style.left = (currentLeft + offset) + 'px';
+    }
+  });
 }
 
-// NUEVA FUNCIÓN: Determinar el orden correcto de una pareja
 function getCorrectCoupleOrder(person1, person2) {
   const parents1 = getParents(person1.id);
   const parents2 = getParents(person2.id);
   
-  // El que tiene padres es el descendiente directo
   if (parents1.length > 0 && parents2.length === 0) {
     return { descendant: person1, spouse: person2 };
   } else if (parents2.length > 0 && parents1.length === 0) {
     return { descendant: person2, spouse: person1 };
   } else {
-    // Ambos tienen padres o ninguno tiene, mantener orden
     return { descendant: person1, spouse: person2 };
   }
 }
 
-function renderCouple(person1, person2, x, y) {
-  // CORREGIR EL ORDEN: El descendiente va primero
+function layoutCouple(person1, person2, x, y) {
   const { descendant, spouse } = getCorrectCoupleOrder(person1, person2);
+  const coupleId = `${descendant.id}-${spouse.id}`;
+  const isExpanded = expandedNodes.has(coupleId) || expandedNodes.has(descendant.id);
   
   const children = getCombinedChildren(descendant.id, spouse.id);
-  const hasChildren = children.length > 0;
   
-  // Dibujar descendiente primero (izquierda)
-  createPersonNode(descendant, x, y, hasChildren);
-  
-  // Dibujar esposa/esposo (derecha)
-  createPersonNode(spouse, x + 220, y, hasChildren);
-  
-  // Línea de matrimonio
-  createConnector(x + 200, y + 60, x + 220, y + 60);
-  
-  let maxY = y + 150;
-  
-  // Dibujar hijos
-  if (hasChildren) {
-    const coupleId = `${descendant.id}-${spouse.id}`;
-    const isExpanded = expandedNodes.has(coupleId) || expandedNodes.has(descendant.id);
-    
-    if (isExpanded) {
-      const childrenY = y + 200;
-      const totalWidth = children.length * 220;
-      let childX = x + 110 - (totalWidth / 2) + 110;
-      
-      children.forEach((child, index) => {
-        // Línea al hijo
-        createConnector(x + 210, y + 100, childX + 100, childrenY);
-        
-        const childSpouse = getSpouse(child.id);
-        let childMaxY;
-        
-        if (childSpouse) {
-          childMaxY = renderCouple(child, childSpouse, childX, childrenY);
-        } else {
-          childMaxY = renderSinglePerson(child, childX, childrenY);
-        }
-        
-        maxY = Math.max(maxY, childMaxY);
-        childX += 220;
-      });
+  const layout = {
+    type: 'couple',
+    person1: descendant,
+    person2: spouse,
+    x: x,
+    y: y,
+    children: [],
+    bounds: {
+      left: x,
+      right: x + NODE_WIDTH * 2 + HORIZONTAL_GAP,
+      top: y,
+      bottom: y + NODE_HEIGHT
     }
+  };
+  
+  if (children.length > 0 && isExpanded) {
+    const childrenLayouts = [];
+    let childX = x;
+    
+    children.forEach((child, index) => {
+      const childSpouse = getSpouse(child.id);
+      let childLayout;
+      
+      if (childSpouse) {
+        childLayout = layoutCouple(child, childSpouse, childX, y + NODE_HEIGHT + VERTICAL_GAP);
+      } else {
+        childLayout = layoutPerson(child, childX, y + NODE_HEIGHT + VERTICAL_GAP);
+      }
+      
+      childrenLayouts.push(childLayout);
+      childX = childLayout.bounds.right + HORIZONTAL_GAP;
+    });
+    
+    layout.children = childrenLayouts;
+    
+    // Actualizar bounds
+    const childrenWidth = childrenLayouts[childrenLayouts.length - 1].bounds.right - childrenLayouts[0].bounds.left;
+    const childrenBottom = Math.max(...childrenLayouts.map(c => c.bounds.bottom));
+    
+    // Centrar padres sobre hijos
+    const parentsWidth = NODE_WIDTH * 2 + HORIZONTAL_GAP;
+    const centerX = childrenLayouts[0].bounds.left + childrenWidth / 2;
+    layout.x = centerX - parentsWidth / 2;
+    
+    layout.bounds.left = Math.min(layout.x, childrenLayouts[0].bounds.left);
+    layout.bounds.right = Math.max(layout.x + parentsWidth, childrenLayouts[childrenLayouts.length - 1].bounds.right);
+    layout.bounds.bottom = childrenBottom;
   }
   
-  return maxY;
+  return layout;
 }
 
-function renderSinglePerson(person, x, y) {
+function layoutPerson(person, x, y) {
+  const isExpanded = expandedNodes.has(person.id);
   const children = getChildren(person.id);
-  const hasChildren = children.length > 0;
   
-  createPersonNode(person, x, y, hasChildren);
+  const layout = {
+    type: 'single',
+    person: person,
+    x: x,
+    y: y,
+    children: [],
+    bounds: {
+      left: x,
+      right: x + NODE_WIDTH,
+      top: y,
+      bottom: y + NODE_HEIGHT
+    }
+  };
   
-  let maxY = y + 150;
-  
-  if (hasChildren) {
-    const isExpanded = expandedNodes.has(person.id);
+  if (children.length > 0 && isExpanded) {
+    const childrenLayouts = [];
+    let childX = x;
     
-    if (isExpanded) {
-      const childrenY = y + 200;
-      const totalWidth = children.length * 220;
-      let childX = x - (totalWidth / 2) + 110;
+    children.forEach((child, index) => {
+      const childSpouse = getSpouse(child.id);
+      let childLayout;
       
-      children.forEach(child => {
-        createConnector(x + 100, y + 100, childX + 100, childrenY);
+      if (childSpouse) {
+        childLayout = layoutCouple(child, childSpouse, childX, y + NODE_HEIGHT + VERTICAL_GAP);
+      } else {
+        childLayout = layoutPerson(child, childX, y + NODE_HEIGHT + VERTICAL_GAP);
+      }
+      
+      childrenLayouts.push(childLayout);
+      childX = childLayout.bounds.right + HORIZONTAL_GAP;
+    });
+    
+    layout.children = childrenLayouts;
+    
+    // Actualizar bounds
+    const childrenWidth = childrenLayouts[childrenLayouts.length - 1].bounds.right - childrenLayouts[0].bounds.left;
+    const childrenBottom = Math.max(...childrenLayouts.map(c => c.bounds.bottom));
+    
+    // Centrar padre sobre hijos
+    const centerX = childrenLayouts[0].bounds.left + childrenWidth / 2;
+    layout.x = centerX - NODE_WIDTH / 2;
+    
+    layout.bounds.left = Math.min(layout.x, childrenLayouts[0].bounds.left);
+    layout.bounds.right = Math.max(layout.x + NODE_WIDTH, childrenLayouts[childrenLayouts.length - 1].bounds.right);
+    layout.bounds.bottom = childrenBottom;
+  }
+  
+  return layout;
+}
+
+function drawLayout(layout) {
+  if (layout.type === 'couple') {
+    // Dibujar pareja
+    createPersonNode(layout.person1, layout.x, layout.y, layout.children.length > 0);
+    createPersonNode(layout.person2, layout.x + NODE_WIDTH + HORIZONTAL_GAP, layout.y, layout.children.length > 0);
+    
+    // Línea de matrimonio
+    createConnector(
+      layout.x + NODE_WIDTH, 
+      layout.y + 60,
+      layout.x + NODE_WIDTH + HORIZONTAL_GAP,
+      layout.y + 60
+    );
+    
+    // Dibujar hijos
+    if (layout.children.length > 0) {
+      const parentCenterX = layout.x + NODE_WIDTH + HORIZONTAL_GAP / 2;
+      
+      layout.children.forEach(childLayout => {
+        const childCenterX = childLayout.type === 'couple' 
+          ? childLayout.x + NODE_WIDTH + HORIZONTAL_GAP / 2
+          : childLayout.x + NODE_WIDTH / 2;
         
-        const childSpouse = getSpouse(child.id);
-        let childMaxY;
+        // Línea vertical desde padres
+        createConnector(parentCenterX, layout.y + NODE_HEIGHT, parentCenterX, layout.y + NODE_HEIGHT + VERTICAL_GAP / 2);
         
-        if (childSpouse) {
-          childMaxY = renderCouple(child, childSpouse, childX, childrenY);
-        } else {
-          childMaxY = renderSinglePerson(child, childX, childrenY);
-        }
+        // Línea horizontal
+        createConnector(
+          Math.min(parentCenterX, childCenterX),
+          layout.y + NODE_HEIGHT + VERTICAL_GAP / 2,
+          Math.max(parentCenterX, childCenterX),
+          layout.y + NODE_HEIGHT + VERTICAL_GAP / 2
+        );
         
-        maxY = Math.max(maxY, childMaxY);
-        childX += 220;
+        // Línea vertical al hijo
+        createConnector(childCenterX, layout.y + NODE_HEIGHT + VERTICAL_GAP / 2, childCenterX, childLayout.y);
+        
+        drawLayout(childLayout);
+      });
+    }
+  } else {
+    // Dibujar persona individual
+    createPersonNode(layout.person, layout.x, layout.y, layout.children.length > 0);
+    
+    // Dibujar hijos
+    if (layout.children.length > 0) {
+      const parentCenterX = layout.x + NODE_WIDTH / 2;
+      
+      layout.children.forEach(childLayout => {
+        const childCenterX = childLayout.type === 'couple'
+          ? childLayout.x + NODE_WIDTH + HORIZONTAL_GAP / 2
+          : childLayout.x + NODE_WIDTH / 2;
+        
+        // Línea vertical desde padre
+        createConnector(parentCenterX, layout.y + NODE_HEIGHT, parentCenterX, layout.y + NODE_HEIGHT + VERTICAL_GAP / 2);
+        
+        // Línea horizontal
+        createConnector(
+          Math.min(parentCenterX, childCenterX),
+          layout.y + NODE_HEIGHT + VERTICAL_GAP / 2,
+          Math.max(parentCenterX, childCenterX),
+          layout.y + NODE_HEIGHT + VERTICAL_GAP / 2
+        );
+        
+        // Línea vertical al hijo
+        createConnector(childCenterX, layout.y + NODE_HEIGHT + VERTICAL_GAP / 2, childCenterX, childLayout.y);
+        
+        drawLayout(childLayout);
       });
     }
   }
-  
-  return maxY;
 }
 
 function createPersonNode(person, x, y, hasChildren) {
