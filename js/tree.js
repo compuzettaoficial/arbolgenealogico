@@ -43,6 +43,11 @@ document.getElementById('resetZoom').addEventListener('click', () => {
   treeScale = 1;
   panOffset = { x: 0, y: 0 };
   updateTreeScale();
+  
+  // Centrar en la primera raíz
+  setTimeout(() => {
+    centerOnRoot();
+  }, 100);
 });
 
 document.getElementById('expandAll').addEventListener('click', () => {
@@ -52,12 +57,42 @@ document.getElementById('expandAll').addEventListener('click', () => {
     if (spouse) expandedNodes.add(`${p.id}-${spouse.id}`);
   });
   renderTree();
+  
+  // Centrar en la primera raíz después de expandir
+  setTimeout(() => {
+    centerOnRoot();
+  }, 100);
 });
 
 document.getElementById('collapseAll').addEventListener('click', () => {
   expandedNodes.clear();
   renderTree();
+  
+  // Centrar en la primera raíz después de colapsar
+  setTimeout(() => {
+    centerOnRoot();
+  }, 100);
 });
+
+// Función para centrar en la primera raíz
+function centerOnRoot() {
+  const firstNode = treeContainer.querySelector('.tree-node');
+  if (firstNode) {
+    const rect = firstNode.getBoundingClientRect();
+    const containerRect = treeContainer.getBoundingClientRect();
+    
+    // Calcular offset para centrar
+    const centerX = (containerRect.width / 2) - (rect.width / 2);
+    const targetX = centerX - parseFloat(firstNode.style.left);
+    
+    panOffset = { 
+      x: targetX, 
+      y: 50 // Dejar espacio arriba
+    };
+    
+    updateTreeScale();
+  }
+}
 
 // Controles flotantes (si existen)
 const setupFloatingControls = () => {
@@ -86,6 +121,9 @@ const setupFloatingControls = () => {
       treeScale = 1;
       panOffset = { x: 0, y: 0 };
       updateTreeScale();
+      setTimeout(() => {
+        centerOnRoot();
+      }, 100);
     });
   }
   
@@ -97,6 +135,9 @@ const setupFloatingControls = () => {
         if (spouse) expandedNodes.add(`${p.id}-${spouse.id}`);
       });
       renderTree();
+      setTimeout(() => {
+        centerOnRoot();
+      }, 100);
     });
   }
   
@@ -104,6 +145,9 @@ const setupFloatingControls = () => {
     floatingCollapseAll.addEventListener('click', () => {
       expandedNodes.clear();
       renderTree();
+      setTimeout(() => {
+        centerOnRoot();
+      }, 100);
     });
   }
 };
@@ -604,7 +648,7 @@ function createPersonNode(person, x, y, hasChildren) {
   node.className = 'tree-node';
   node.style.left = x + 'px';
   node.style.top = y + 'px';
-  node.style.pointerEvents = 'auto'; // Permitir clicks
+  node.style.pointerEvents = 'auto';
   
   const genderClass = person.genero === 'Masculino' ? 'node-gender-male' : 'node-gender-female';
   const genderIcon = person.genero === 'Masculino' ? '👨' : '👩';
@@ -617,27 +661,40 @@ function createPersonNode(person, x, y, hasChildren) {
      <div style="display: none;">${genderIcon}</div>` :
     genderIcon;
   
+  const spouse = getSpouse(person.id);
+  const coupleId = spouse ? `${person.id}-${spouse.id}` : person.id;
+  const isExpanded = expandedNodes.has(coupleId) || expandedNodes.has(person.id);
+  
+  // Indicador visual de estado expandido/colapsado
+  let indicator = '';
+  if (hasChildren) {
+    indicator = isExpanded ? '▼' : '▶';
+  }
+  
   node.innerHTML = `
     <div class="node-card ${genderClass}">
+      ${indicator ? `<div style="position: absolute; top: 5px; right: 5px; font-size: 12px;">${indicator}</div>` : ''}
       <div class="node-avatar">${avatar}</div>
       <div class="node-name">${person.nombre} ${person.apellidos}</div>
       <div class="node-info">${birthYear}${deathYear}</div>
     </div>
   `;
   
-  // SIEMPRE permitir click si tiene hijos, independientemente de si tiene pareja
+  // Permitir click si tiene hijos (expandir/colapsar)
   if (hasChildren) {
     node.style.cursor = 'pointer';
     node.onclick = (e) => {
       e.stopPropagation();
-      const spouse = getSpouse(person.id);
-      const coupleId = spouse ? `${person.id}-${spouse.id}` : person.id;
       
+      // Toggle estado expandido
       if (expandedNodes.has(coupleId)) {
         expandedNodes.delete(coupleId);
+        expandedNodes.delete(person.id);
       } else {
         expandedNodes.add(coupleId);
+        expandedNodes.add(person.id);
       }
+      
       renderTree();
     };
   }
