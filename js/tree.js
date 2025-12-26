@@ -1,4 +1,3 @@
-
 // Elementos del DOM
 const treeContainer = document.getElementById('treeContainer');
 const personForm = document.getElementById('personForm');
@@ -37,7 +36,11 @@ document.getElementById('resetZoom').addEventListener('click', () => {
 });
 
 document.getElementById('expandAll').addEventListener('click', () => {
-  persons.forEach(p => expandedNodes.add(p.id));
+  persons.forEach(p => {
+    expandedNodes.add(p.id);
+    const spouse = getSpouse(p.id);
+    if (spouse) expandedNodes.add(`${p.id}-${spouse.id}`);
+  });
   renderTree();
 });
 
@@ -241,7 +244,7 @@ function updatePersonSelects() {
   });
 }
 
-// RENDERIZAR ÁRBOL VISUAL
+// ===== RENDERIZAR ÁRBOL VISUAL - NUEVA LÓGICA CORREGIDA =====
 function renderTree() {
   if (!treeContainer) return;
   
@@ -274,15 +277,34 @@ function renderTree() {
   });
 }
 
+// NUEVA FUNCIÓN: Determinar el orden correcto de una pareja
+function getCorrectCoupleOrder(person1, person2) {
+  const parents1 = getParents(person1.id);
+  const parents2 = getParents(person2.id);
+  
+  // El que tiene padres es el descendiente directo
+  if (parents1.length > 0 && parents2.length === 0) {
+    return { descendant: person1, spouse: person2 };
+  } else if (parents2.length > 0 && parents1.length === 0) {
+    return { descendant: person2, spouse: person1 };
+  } else {
+    // Ambos tienen padres o ninguno tiene, mantener orden
+    return { descendant: person1, spouse: person2 };
+  }
+}
+
 function renderCouple(person1, person2, x, y) {
-  const children = getCombinedChildren(person1.id, person2.id);
+  // CORREGIR EL ORDEN: El descendiente va primero
+  const { descendant, spouse } = getCorrectCoupleOrder(person1, person2);
+  
+  const children = getCombinedChildren(descendant.id, spouse.id);
   const hasChildren = children.length > 0;
   
-  // Dibujar primera persona
-  createPersonNode(person1, x, y, hasChildren);
+  // Dibujar descendiente primero (izquierda)
+  createPersonNode(descendant, x, y, hasChildren);
   
-  // Dibujar segunda persona
-  createPersonNode(person2, x + 220, y, hasChildren);
+  // Dibujar esposa/esposo (derecha)
+  createPersonNode(spouse, x + 220, y, hasChildren);
   
   // Línea de matrimonio
   createConnector(x + 200, y + 60, x + 220, y + 60);
@@ -291,8 +313,8 @@ function renderCouple(person1, person2, x, y) {
   
   // Dibujar hijos
   if (hasChildren) {
-    const coupleId = `${person1.id}-${person2.id}`;
-    const isExpanded = expandedNodes.has(coupleId);
+    const coupleId = `${descendant.id}-${spouse.id}`;
+    const isExpanded = expandedNodes.has(coupleId) || expandedNodes.has(descendant.id);
     
     if (isExpanded) {
       const childrenY = y + 200;
@@ -385,10 +407,10 @@ function createPersonNode(person, x, y, hasChildren) {
   
   if (hasChildren) {
     node.style.cursor = 'pointer';
-    node.onclick = () => {
-      const nodeId = person.id;
-      const coupleSpouse = getSpouse(person.id);
-      const coupleId = coupleSpouse ? `${person.id}-${coupleSpouse.id}` : person.id;
+    node.onclick = (e) => {
+      e.stopPropagation();
+      const spouse = getSpouse(person.id);
+      const coupleId = spouse ? `${person.id}-${spouse.id}` : person.id;
       
       if (expandedNodes.has(coupleId)) {
         expandedNodes.delete(coupleId);
@@ -406,6 +428,7 @@ function createConnector(x1, y1, x2, y2) {
   const line = document.createElement('div');
   line.style.position = 'absolute';
   line.style.backgroundColor = '#e0e0e0';
+  line.style.zIndex = '1';
   
   if (x1 === x2) {
     // Línea vertical
