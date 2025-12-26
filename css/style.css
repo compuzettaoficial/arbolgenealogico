@@ -534,10 +534,33 @@ button {
 /* Asegurar que los nodos sean clickeables */
 .tree-node {
   pointer-events: none;
+  position: relative;
 }
 
 .tree-node .node-card {
   pointer-events: auto;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.tree-node .node-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+/* Indicador de expandible */
+.node-card[data-expandable="true"] {
+  cursor: pointer !important;
+}
+
+.node-card[data-expandable="true"]::after {
+  content: "▼";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 14px;
+  color: #667eea;
+  font-weight: bold;
 }
 
 /* Esconder controles originales en móvil */
