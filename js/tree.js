@@ -8,6 +8,9 @@ const relationsList = document.getElementById('relationsList');
 // Estado del árbol
 let treeScale = 1;
 let expandedNodes = new Set();
+let isPanning = false;
+let panStart = { x: 0, y: 0 };
+let panOffset = { x: 0, y: 0 };
 
 // Configuración de espaciado
 const NODE_WIDTH = 220;
@@ -32,12 +35,13 @@ document.getElementById('zoomIn').addEventListener('click', () => {
 });
 
 document.getElementById('zoomOut').addEventListener('click', () => {
-  treeScale = Math.max(treeScale - 0.1, 0.5);
+  treeScale = Math.max(treeScale - 0.1, 0.3);
   updateTreeScale();
 });
 
 document.getElementById('resetZoom').addEventListener('click', () => {
   treeScale = 1;
+  panOffset = { x: 0, y: 0 };
   updateTreeScale();
 });
 
@@ -55,9 +59,106 @@ document.getElementById('collapseAll').addEventListener('click', () => {
   renderTree();
 });
 
+// Controles flotantes (si existen)
+const setupFloatingControls = () => {
+  const floatingZoomIn = document.getElementById('floatingZoomIn');
+  const floatingZoomOut = document.getElementById('floatingZoomOut');
+  const floatingReset = document.getElementById('floatingReset');
+  const floatingExpandAll = document.getElementById('floatingExpandAll');
+  const floatingCollapseAll = document.getElementById('floatingCollapseAll');
+  
+  if (floatingZoomIn) {
+    floatingZoomIn.addEventListener('click', () => {
+      treeScale = Math.min(treeScale + 0.1, 2);
+      updateTreeScale();
+    });
+  }
+  
+  if (floatingZoomOut) {
+    floatingZoomOut.addEventListener('click', () => {
+      treeScale = Math.max(treeScale - 0.1, 0.3);
+      updateTreeScale();
+    });
+  }
+  
+  if (floatingReset) {
+    floatingReset.addEventListener('click', () => {
+      treeScale = 1;
+      panOffset = { x: 0, y: 0 };
+      updateTreeScale();
+    });
+  }
+  
+  if (floatingExpandAll) {
+    floatingExpandAll.addEventListener('click', () => {
+      persons.forEach(p => {
+        expandedNodes.add(p.id);
+        const spouse = getSpouse(p.id);
+        if (spouse) expandedNodes.add(`${p.id}-${spouse.id}`);
+      });
+      renderTree();
+    });
+  }
+  
+  if (floatingCollapseAll) {
+    floatingCollapseAll.addEventListener('click', () => {
+      expandedNodes.clear();
+      renderTree();
+    });
+  }
+};
+
+// Ejecutar después de cargar
+setTimeout(setupFloatingControls, 100);
+
+// Funcionalidad de arrastrar (pan)
+treeContainer.addEventListener('mousedown', (e) => {
+  if (e.target === treeContainer || e.target.classList.contains('tree-canvas')) {
+    isPanning = true;
+    panStart = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
+    treeContainer.style.cursor = 'grabbing';
+    e.preventDefault();
+  }
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (isPanning) {
+    panOffset.x = e.clientX - panStart.x;
+    panOffset.y = e.clientY - panStart.y;
+    updateTreeScale();
+    e.preventDefault();
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  if (isPanning) {
+    isPanning = false;
+    treeContainer.style.cursor = 'grab';
+  }
+});
+
+// Touch events para móviles
+let touchStart = { x: 0, y: 0 };
+
+treeContainer.addEventListener('touchstart', (e) => {
+  if (e.target === treeContainer) {
+    touchStart = { x: e.touches[0].clientX - panOffset.x, y: e.touches[0].clientY - panOffset.y };
+    e.preventDefault();
+  }
+});
+
+treeContainer.addEventListener('touchmove', (e) => {
+  if (e.target === treeContainer) {
+    panOffset.x = e.touches[0].clientX - touchStart.x;
+    panOffset.y = e.touches[0].clientY - touchStart.y;
+    updateTreeScale();
+    e.preventDefault();
+  }
+});
+
 function updateTreeScale() {
-  treeContainer.style.transform = `scale(${treeScale})`;
-  treeContainer.style.transformOrigin = 'top center';
+  treeContainer.style.transform = `translate(${panOffset.x}px, ${panOffset.y}px) scale(${treeScale})`;
+  treeContainer.style.transformOrigin = 'top left';
 }
 
 // FORMULARIOS (mantener igual)
@@ -503,6 +604,7 @@ function createPersonNode(person, x, y, hasChildren) {
   node.className = 'tree-node';
   node.style.left = x + 'px';
   node.style.top = y + 'px';
+  node.style.pointerEvents = 'auto'; // Permitir clicks
   
   const genderClass = person.genero === 'Masculino' ? 'node-gender-male' : 'node-gender-female';
   const genderIcon = person.genero === 'Masculino' ? '👨' : '👩';
@@ -523,6 +625,7 @@ function createPersonNode(person, x, y, hasChildren) {
     </div>
   `;
   
+  // SIEMPRE permitir click si tiene hijos, independientemente de si tiene pareja
   if (hasChildren) {
     node.style.cursor = 'pointer';
     node.onclick = (e) => {
