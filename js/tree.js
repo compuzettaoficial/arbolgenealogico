@@ -625,12 +625,28 @@ function createPersonNode(person, x, y, hasChildren) {
      <div style="display: none;">${genderIcon}</div>` :
     genderIcon;
   
+  // VERIFICAR SI REALMENTE TIENE HIJOS (buscar en las relaciones)
+  const actualChildren = getChildren(person.id);
   const spouse = getSpouse(person.id);
+  let spouseChildren = [];
+  if (spouse) {
+    spouseChildren = getChildren(spouse.id);
+  }
+  const totalChildren = [...actualChildren];
+  spouseChildren.forEach(child => {
+    if (!totalChildren.find(c => c.id === child.id)) {
+      totalChildren.push(child);
+    }
+  });
+  
+  const reallyHasChildren = totalChildren.length > 0;
+  
   const coupleId = spouse ? `${person.id}-${spouse.id}` : person.id;
   const isExpanded = expandedNodes.has(coupleId) || expandedNodes.has(person.id);
   
+  // SIEMPRE mostrar indicador si tiene hijos (independiente de si está expandido)
   let indicator = '';
-  if (hasChildren) {
+  if (reallyHasChildren) {
     indicator = isExpanded ? '▼' : '▶';
   }
   
@@ -643,12 +659,14 @@ function createPersonNode(person, x, y, hasChildren) {
     </div>
   `;
   
-  if (hasChildren) {
+  // Permitir click si REALMENTE tiene hijos
+  if (reallyHasChildren) {
     node.style.cursor = 'pointer';
     node.onclick = (e) => {
       e.stopPropagation();
       
-      if (expandedNodes.has(coupleId)) {
+      // Toggle en todos los IDs posibles
+      if (isExpanded) {
         expandedNodes.delete(coupleId);
         expandedNodes.delete(person.id);
       } else {
