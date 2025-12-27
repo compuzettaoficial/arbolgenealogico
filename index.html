@@ -159,5 +159,26 @@
   <script src="js/data.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/tree.js"></script>
+  
+  <script>
+    // Función para limpiar IDs viejos (solo en Google Apps Script)
+    function cleanupIds() {
+      if (typeof google !== 'undefined' && google.script) {
+        if (confirm('¿Convertir todos los IDs largos a formato P####? Esta acción no se puede deshacer.')) {
+          const password = prompt('Ingresa la contraseña de administrador:');
+          google.script.run
+            .withSuccessHandler(function(result) {
+              if (result.success) {
+                alert(result.message);
+                location.reload();
+              } else {
+                alert('Error: ' + result.message);
+              }
+            })
+            .cleanupOldIds(password);
+        }
+      }
+    }
+  </script>
 </body>
 </html>
