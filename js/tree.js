@@ -438,8 +438,14 @@ function getCorrectCoupleOrder(person1, person2) {
 
 function layoutCouple(person1, person2, x, y) {
   const { descendant, spouse } = getCorrectCoupleOrder(person1, person2);
+  
+  // IMPORTANTE: Crear IDs consistentes
   const coupleId = `${descendant.id}-${spouse.id}`;
-  const isExpanded = expandedNodes.has(coupleId) || expandedNodes.has(descendant.id);
+  
+  // Verificar expansión con AMBOS IDs posibles
+  const isExpanded = expandedNodes.has(coupleId) || 
+                     expandedNodes.has(descendant.id) || 
+                     expandedNodes.has(spouse.id);
   
   const children = getCombinedChildren(descendant.id, spouse.id);
   
@@ -447,6 +453,7 @@ function layoutCouple(person1, person2, x, y) {
     type: 'couple',
     person1: descendant,
     person2: spouse,
+    coupleId: coupleId, // Guardar el ID en el layout
     x: x,
     y: y,
     children: [],
@@ -547,8 +554,9 @@ function layoutPerson(person, x, y) {
 
 function drawLayout(layout) {
   if (layout.type === 'couple') {
-    createPersonNode(layout.person1, layout.x, layout.y, layout.children.length > 0);
-    createPersonNode(layout.person2, layout.x + NODE_WIDTH + HORIZONTAL_GAP, layout.y, layout.children.length > 0);
+    // Pasar el coupleId correcto al crear nodos
+    createPersonNode(layout.person1, layout.x, layout.y, layout.children.length > 0, layout.coupleId);
+    createPersonNode(layout.person2, layout.x + NODE_WIDTH + HORIZONTAL_GAP, layout.y, layout.children.length > 0, layout.coupleId);
     
     createConnector(
       layout.x + NODE_WIDTH, 
@@ -580,7 +588,7 @@ function drawLayout(layout) {
       });
     }
   } else {
-    createPersonNode(layout.person, layout.x, layout.y, layout.children.length > 0);
+    createPersonNode(layout.person, layout.x, layout.y, layout.children.length > 0, null);
     
     if (layout.children.length > 0) {
       const parentCenterX = layout.x + NODE_WIDTH / 2;
@@ -607,7 +615,7 @@ function drawLayout(layout) {
   }
 }
 
-function createPersonNode(person, x, y, hasChildren) {
+function createPersonNode(person, x, y, hasChildren, providedCoupleId = null) {
   const node = document.createElement('div');
   node.className = 'tree-node';
   node.style.left = x + 'px';
@@ -625,7 +633,7 @@ function createPersonNode(person, x, y, hasChildren) {
      <div style="display: none;">${genderIcon}</div>` :
     genderIcon;
   
-  // VERIFICAR SI REALMENTE TIENE HIJOS (buscar en las relaciones)
+  // Verificar si realmente tiene hijos
   const actualChildren = getChildren(person.id);
   const spouse = getSpouse(person.id);
   let spouseChildren = [];
@@ -641,10 +649,15 @@ function createPersonNode(person, x, y, hasChildren) {
   
   const reallyHasChildren = totalChildren.length > 0;
   
-  const coupleId = spouse ? `${person.id}-${spouse.id}` : person.id;
-  const isExpanded = expandedNodes.has(coupleId) || expandedNodes.has(person.id);
+  // Usar el coupleId proporcionado o generarlo
+  const coupleId = providedCoupleId || (spouse ? `${person.id}-${spouse.id}` : person.id);
   
-  // SIEMPRE mostrar indicador si tiene hijos (independiente de si está expandido)
+  // Verificar expansión con TODOS los IDs posibles
+  const isExpanded = expandedNodes.has(coupleId) || 
+                     expandedNodes.has(person.id) ||
+                     (spouse && expandedNodes.has(spouse.id));
+  
+  // SIEMPRE mostrar indicador si tiene hijos
   let indicator = '';
   if (reallyHasChildren) {
     indicator = isExpanded ? '▼' : '▶';
@@ -665,13 +678,16 @@ function createPersonNode(person, x, y, hasChildren) {
     node.onclick = (e) => {
       e.stopPropagation();
       
-      // Toggle en todos los IDs posibles
+      // Toggle: Si está expandido, eliminar TODOS los IDs
+      // Si está colapsado, agregar el coupleId principal
       if (isExpanded) {
         expandedNodes.delete(coupleId);
         expandedNodes.delete(person.id);
+        if (spouse) expandedNodes.delete(spouse.id);
       } else {
         expandedNodes.add(coupleId);
         expandedNodes.add(person.id);
+        if (spouse) expandedNodes.add(spouse.id);
       }
       
       renderTree();
