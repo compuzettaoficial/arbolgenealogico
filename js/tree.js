@@ -623,15 +623,37 @@ function createPersonNode(person, x, y, hasChildren, providedCoupleId = null) {
   node.style.pointerEvents = 'auto';
   
   const genderClass = person.genero === 'Masculino' ? 'node-gender-male' : 'node-gender-female';
-  const genderIcon = person.genero === 'Masculino' ? '👨' : '👩';
+  const genderIcon = person.genero === 'Masculino' ? '👤' : '👤';
   
+  // Formatear fechas
   const birthYear = person.fechaNacimiento ? new Date(person.fechaNacimiento).getFullYear() : '';
-  const deathYear = person.fechaMuerte ? ' - ' + new Date(person.fechaMuerte).getFullYear() : '';
+  const deathYear = person.fechaMuerte ? new Date(person.fechaMuerte).getFullYear() : '';
+  const birthPlace = person.lugarNacimiento ? person.lugarNacimiento : '';
   
-  const avatar = person.photo ? 
-    `<img src="${person.photo}" alt="${person.nombre}" onerror="this.style.display='none'; this.nextSibling.style.display='flex';">
-     <div style="display: none;">${genderIcon}</div>` :
-    genderIcon;
+  // Construir string de vida
+  let lifeInfo = '';
+  if (birthYear && deathYear) {
+    lifeInfo = `${birthYear} - ${deathYear}`;
+  } else if (birthYear) {
+    lifeInfo = `n. ${birthYear}`;
+  } else if (deathYear) {
+    lifeInfo = `† ${deathYear}`;
+  }
+  
+  // Avatar: prioridad imagen > icono por género
+  let avatarContent = '';
+  if (person.photo && person.photo.trim() !== '') {
+    // Si tiene URL de foto
+    avatarContent = `
+      <img src="${person.photo}" 
+           alt="${person.nombre}" 
+           style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"
+           onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'font-size: 40px; color: white;\\'>${genderIcon}</div>';">
+    `;
+  } else {
+    // Avatar por defecto minimalista
+    avatarContent = `<div style="font-size: 40px; color: white;">${genderIcon}</div>`;
+  }
   
   // Verificar si realmente tiene hijos
   const actualChildren = getChildren(person.id);
@@ -663,12 +685,20 @@ function createPersonNode(person, x, y, hasChildren, providedCoupleId = null) {
     indicator = isExpanded ? '▼' : '▶';
   }
   
+  // Construir tooltip con información completa
+  let tooltipText = `${person.nombre} ${person.apellidos}`;
+  if (birthPlace) tooltipText += `\nNacimiento: ${birthPlace}`;
+  if (birthYear) tooltipText += ` (${birthYear})`;
+  if (deathYear) tooltipText += `\nFallecimiento: ${deathYear}`;
+  if (person.notas) tooltipText += `\n\n${person.notas}`;
+  
   node.innerHTML = `
-    <div class="node-card ${genderClass}">
+    <div class="node-card ${genderClass}" title="${tooltipText.replace(/"/g, '&quot;')}">
       ${indicator ? `<div style="position: absolute; top: 8px; right: 8px; font-size: 14px; color: #667eea; font-weight: bold;">${indicator}</div>` : ''}
-      <div class="node-avatar">${avatar}</div>
+      <div class="node-avatar">${avatarContent}</div>
       <div class="node-name">${person.nombre} ${person.apellidos}</div>
-      <div class="node-info">${birthYear}${deathYear}</div>
+      <div class="node-info">${lifeInfo}</div>
+      ${birthPlace ? `<div class="node-place">${birthPlace}</div>` : ''}
     </div>
   `;
   
