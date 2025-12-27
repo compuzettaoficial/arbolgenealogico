@@ -52,12 +52,6 @@ body {
 .login-icon {
   font-size: 80px;
   margin-bottom: 20px;
-  animation: bounce 1s ease infinite;
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
 }
 
 .login-container h1 {
@@ -248,12 +242,18 @@ button {
   overflow: auto;
   padding: 40px;
   position: relative;
+  cursor: grab;
+}
+
+.tree-canvas:active {
+  cursor: grabbing;
 }
 
 /* ===== TREE NODES ===== */
 .tree-node {
   position: absolute;
-  transition: all 0.5s ease;
+  transition: all 0.3s ease;
+  pointer-events: none;
 }
 
 .node-card {
@@ -265,7 +265,8 @@ button {
   text-align: center;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   transition: all 0.3s;
-  cursor: pointer;
+  pointer-events: auto;
+  position: relative;
 }
 
 .node-card:hover {
@@ -458,27 +459,7 @@ button {
   border-left: 4px solid var(--danger);
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .admin-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .controls {
-    justify-content: center;
-  }
-  
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Controles flotantes fijos */
+/* ===== CONTROLES FLOTANTES ===== */
 .tree-controls-floating {
   position: fixed;
   bottom: 30px;
@@ -522,51 +503,23 @@ button {
   margin: 5px 0;
 }
 
-/* Cursor de mano cuando se puede arrastrar */
-.tree-canvas {
-  cursor: grab;
-}
-
-.tree-canvas:active {
-  cursor: grabbing;
-}
-
-/* Asegurar que los nodos sean clickeables */
-.tree-node {
-  pointer-events: none;
-  position: relative;
-}
-
-.tree-node .node-card {
-  pointer-events: auto;
-  position: relative;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.tree-node .node-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-}
-
-/* Indicador de expandible */
-.node-card[data-expandable="true"] {
-  cursor: pointer !important;
-}
-
-.node-card[data-expandable="true"]::after {
-  content: "▼";
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 14px;
-  color: #667eea;
-  font-weight: bold;
-}
-
-/* Esconder controles originales en móvil */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+  
   .controls {
-    display: none;
+    justify-content: center;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
   }
   
   .tree-controls-floating {
