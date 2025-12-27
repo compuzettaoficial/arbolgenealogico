@@ -43,11 +43,7 @@ document.getElementById('resetZoom').addEventListener('click', () => {
   treeScale = 1;
   panOffset = { x: 0, y: 0 };
   updateTreeScale();
-  
-  // Centrar en la primera raíz
-  setTimeout(() => {
-    centerOnRoot();
-  }, 100);
+  setTimeout(centerOnRoot, 100);
 });
 
 document.getElementById('expandAll').addEventListener('click', () => {
@@ -57,103 +53,14 @@ document.getElementById('expandAll').addEventListener('click', () => {
     if (spouse) expandedNodes.add(`${p.id}-${spouse.id}`);
   });
   renderTree();
-  
-  // Centrar en la primera raíz después de expandir
-  setTimeout(() => {
-    centerOnRoot();
-  }, 100);
+  setTimeout(centerOnRoot, 100);
 });
 
 document.getElementById('collapseAll').addEventListener('click', () => {
   expandedNodes.clear();
   renderTree();
-  
-  // Centrar en la primera raíz después de colapsar
-  setTimeout(() => {
-    centerOnRoot();
-  }, 100);
+  setTimeout(centerOnRoot, 100);
 });
-
-// Función para centrar en la primera raíz
-function centerOnRoot() {
-  const firstNode = treeContainer.querySelector('.tree-node');
-  if (firstNode) {
-    const rect = firstNode.getBoundingClientRect();
-    const containerRect = treeContainer.getBoundingClientRect();
-    
-    // Calcular offset para centrar
-    const centerX = (containerRect.width / 2) - (rect.width / 2);
-    const targetX = centerX - parseFloat(firstNode.style.left);
-    
-    panOffset = { 
-      x: targetX, 
-      y: 50 // Dejar espacio arriba
-    };
-    
-    updateTreeScale();
-  }
-}
-
-// Controles flotantes (si existen)
-const setupFloatingControls = () => {
-  const floatingZoomIn = document.getElementById('floatingZoomIn');
-  const floatingZoomOut = document.getElementById('floatingZoomOut');
-  const floatingReset = document.getElementById('floatingReset');
-  const floatingExpandAll = document.getElementById('floatingExpandAll');
-  const floatingCollapseAll = document.getElementById('floatingCollapseAll');
-  
-  if (floatingZoomIn) {
-    floatingZoomIn.addEventListener('click', () => {
-      treeScale = Math.min(treeScale + 0.1, 2);
-      updateTreeScale();
-    });
-  }
-  
-  if (floatingZoomOut) {
-    floatingZoomOut.addEventListener('click', () => {
-      treeScale = Math.max(treeScale - 0.1, 0.3);
-      updateTreeScale();
-    });
-  }
-  
-  if (floatingReset) {
-    floatingReset.addEventListener('click', () => {
-      treeScale = 1;
-      panOffset = { x: 0, y: 0 };
-      updateTreeScale();
-      setTimeout(() => {
-        centerOnRoot();
-      }, 100);
-    });
-  }
-  
-  if (floatingExpandAll) {
-    floatingExpandAll.addEventListener('click', () => {
-      persons.forEach(p => {
-        expandedNodes.add(p.id);
-        const spouse = getSpouse(p.id);
-        if (spouse) expandedNodes.add(`${p.id}-${spouse.id}`);
-      });
-      renderTree();
-      setTimeout(() => {
-        centerOnRoot();
-      }, 100);
-    });
-  }
-  
-  if (floatingCollapseAll) {
-    floatingCollapseAll.addEventListener('click', () => {
-      expandedNodes.clear();
-      renderTree();
-      setTimeout(() => {
-        centerOnRoot();
-      }, 100);
-    });
-  }
-};
-
-// Ejecutar después de cargar
-setTimeout(setupFloatingControls, 100);
 
 // Funcionalidad de arrastrar (pan)
 treeContainer.addEventListener('mousedown', (e) => {
@@ -205,9 +112,82 @@ function updateTreeScale() {
   treeContainer.style.transformOrigin = 'top left';
 }
 
-// FORMULARIOS (mantener igual)
+function centerOnRoot() {
+  const firstNode = treeContainer.querySelector('.tree-node');
+  if (firstNode) {
+    const rect = firstNode.getBoundingClientRect();
+    const containerRect = treeContainer.getBoundingClientRect();
+    
+    const centerX = (containerRect.width / 2) - (rect.width / 2);
+    const targetX = centerX - parseFloat(firstNode.style.left);
+    
+    panOffset = { 
+      x: targetX / treeScale, 
+      y: 50
+    };
+    
+    updateTreeScale();
+  }
+}
+
+// Controles flotantes
+const setupFloatingControls = () => {
+  const floatingZoomIn = document.getElementById('floatingZoomIn');
+  const floatingZoomOut = document.getElementById('floatingZoomOut');
+  const floatingReset = document.getElementById('floatingReset');
+  const floatingExpandAll = document.getElementById('floatingExpandAll');
+  const floatingCollapseAll = document.getElementById('floatingCollapseAll');
+  
+  if (floatingZoomIn) {
+    floatingZoomIn.addEventListener('click', () => {
+      treeScale = Math.min(treeScale + 0.1, 2);
+      updateTreeScale();
+    });
+  }
+  
+  if (floatingZoomOut) {
+    floatingZoomOut.addEventListener('click', () => {
+      treeScale = Math.max(treeScale - 0.1, 0.3);
+      updateTreeScale();
+    });
+  }
+  
+  if (floatingReset) {
+    floatingReset.addEventListener('click', () => {
+      treeScale = 1;
+      panOffset = { x: 0, y: 0 };
+      updateTreeScale();
+      setTimeout(centerOnRoot, 100);
+    });
+  }
+  
+  if (floatingExpandAll) {
+    floatingExpandAll.addEventListener('click', () => {
+      persons.forEach(p => {
+        expandedNodes.add(p.id);
+        const spouse = getSpouse(p.id);
+        if (spouse) expandedNodes.add(`${p.id}-${spouse.id}`);
+      });
+      renderTree();
+      setTimeout(centerOnRoot, 100);
+    });
+  }
+  
+  if (floatingCollapseAll) {
+    floatingCollapseAll.addEventListener('click', () => {
+      expandedNodes.clear();
+      renderTree();
+      setTimeout(centerOnRoot, 100);
+    });
+  }
+};
+
+setTimeout(setupFloatingControls, 100);
+
+// FORMULARIO PERSONAS
 function handlePersonSubmit(e) {
   e.preventDefault();
+  
   if (!isAdmin()) {
     showMessage('No tienes permisos', 'error');
     return;
@@ -268,8 +248,10 @@ function handleDeletePerson(personId) {
   }
 }
 
+// FORMULARIO RELACIONES
 function handleRelationSubmit(e) {
   e.preventDefault();
+  
   if (!isAdmin()) {
     showMessage('No tienes permisos', 'error');
     return;
@@ -392,8 +374,7 @@ function updatePersonSelects() {
   });
 }
 
-// ===== NUEVO ALGORITMO DE RENDERIZADO =====
-
+// ===== RENDERIZAR ÁRBOL =====
 function renderTree() {
   if (!treeContainer) return;
   
@@ -430,15 +411,13 @@ function renderTree() {
     maxWidth = Math.max(maxWidth, layout.bounds.right - layout.bounds.left);
   });
   
-  // Ajustar tamaño del contenedor
   treeContainer.style.minWidth = (maxWidth + 200) + 'px';
   treeContainer.style.minHeight = (currentY + 100) + 'px';
   
-  // Centrar horizontalmente
   const offset = Math.max(0, (treeContainer.clientWidth - maxWidth) / 2);
   Array.from(treeContainer.children).forEach(child => {
     if (child.style.left) {
-      const currentLeft = parseInt(child.style.left);
+      const currentLeft = parseFloat(child.style.left);
       child.style.left = (currentLeft + offset) + 'px';
     }
   });
@@ -499,11 +478,9 @@ function layoutCouple(person1, person2, x, y) {
     
     layout.children = childrenLayouts;
     
-    // Actualizar bounds
     const childrenWidth = childrenLayouts[childrenLayouts.length - 1].bounds.right - childrenLayouts[0].bounds.left;
     const childrenBottom = Math.max(...childrenLayouts.map(c => c.bounds.bottom));
     
-    // Centrar padres sobre hijos
     const parentsWidth = NODE_WIDTH * 2 + HORIZONTAL_GAP;
     const centerX = childrenLayouts[0].bounds.left + childrenWidth / 2;
     layout.x = centerX - parentsWidth / 2;
@@ -554,11 +531,9 @@ function layoutPerson(person, x, y) {
     
     layout.children = childrenLayouts;
     
-    // Actualizar bounds
     const childrenWidth = childrenLayouts[childrenLayouts.length - 1].bounds.right - childrenLayouts[0].bounds.left;
     const childrenBottom = Math.max(...childrenLayouts.map(c => c.bounds.bottom));
     
-    // Centrar padre sobre hijos
     const centerX = childrenLayouts[0].bounds.left + childrenWidth / 2;
     layout.x = centerX - NODE_WIDTH / 2;
     
@@ -572,11 +547,9 @@ function layoutPerson(person, x, y) {
 
 function drawLayout(layout) {
   if (layout.type === 'couple') {
-    // Dibujar pareja
     createPersonNode(layout.person1, layout.x, layout.y, layout.children.length > 0);
     createPersonNode(layout.person2, layout.x + NODE_WIDTH + HORIZONTAL_GAP, layout.y, layout.children.length > 0);
     
-    // Línea de matrimonio
     createConnector(
       layout.x + NODE_WIDTH, 
       layout.y + 60,
@@ -584,7 +557,6 @@ function drawLayout(layout) {
       layout.y + 60
     );
     
-    // Dibujar hijos
     if (layout.children.length > 0) {
       const parentCenterX = layout.x + NODE_WIDTH + HORIZONTAL_GAP / 2;
       
@@ -593,10 +565,8 @@ function drawLayout(layout) {
           ? childLayout.x + NODE_WIDTH + HORIZONTAL_GAP / 2
           : childLayout.x + NODE_WIDTH / 2;
         
-        // Línea vertical desde padres
         createConnector(parentCenterX, layout.y + NODE_HEIGHT, parentCenterX, layout.y + NODE_HEIGHT + VERTICAL_GAP / 2);
         
-        // Línea horizontal
         createConnector(
           Math.min(parentCenterX, childCenterX),
           layout.y + NODE_HEIGHT + VERTICAL_GAP / 2,
@@ -604,17 +574,14 @@ function drawLayout(layout) {
           layout.y + NODE_HEIGHT + VERTICAL_GAP / 2
         );
         
-        // Línea vertical al hijo
         createConnector(childCenterX, layout.y + NODE_HEIGHT + VERTICAL_GAP / 2, childCenterX, childLayout.y);
         
         drawLayout(childLayout);
       });
     }
   } else {
-    // Dibujar persona individual
     createPersonNode(layout.person, layout.x, layout.y, layout.children.length > 0);
     
-    // Dibujar hijos
     if (layout.children.length > 0) {
       const parentCenterX = layout.x + NODE_WIDTH / 2;
       
@@ -623,10 +590,8 @@ function drawLayout(layout) {
           ? childLayout.x + NODE_WIDTH + HORIZONTAL_GAP / 2
           : childLayout.x + NODE_WIDTH / 2;
         
-        // Línea vertical desde padre
         createConnector(parentCenterX, layout.y + NODE_HEIGHT, parentCenterX, layout.y + NODE_HEIGHT + VERTICAL_GAP / 2);
         
-        // Línea horizontal
         createConnector(
           Math.min(parentCenterX, childCenterX),
           layout.y + NODE_HEIGHT + VERTICAL_GAP / 2,
@@ -634,7 +599,6 @@ function drawLayout(layout) {
           layout.y + NODE_HEIGHT + VERTICAL_GAP / 2
         );
         
-        // Línea vertical al hijo
         createConnector(childCenterX, layout.y + NODE_HEIGHT + VERTICAL_GAP / 2, childCenterX, childLayout.y);
         
         drawLayout(childLayout);
@@ -665,7 +629,6 @@ function createPersonNode(person, x, y, hasChildren) {
   const coupleId = spouse ? `${person.id}-${spouse.id}` : person.id;
   const isExpanded = expandedNodes.has(coupleId) || expandedNodes.has(person.id);
   
-  // Indicador visual de estado expandido/colapsado
   let indicator = '';
   if (hasChildren) {
     indicator = isExpanded ? '▼' : '▶';
@@ -673,20 +636,18 @@ function createPersonNode(person, x, y, hasChildren) {
   
   node.innerHTML = `
     <div class="node-card ${genderClass}">
-      ${indicator ? `<div style="position: absolute; top: 5px; right: 5px; font-size: 12px;">${indicator}</div>` : ''}
+      ${indicator ? `<div style="position: absolute; top: 8px; right: 8px; font-size: 14px; color: #667eea; font-weight: bold;">${indicator}</div>` : ''}
       <div class="node-avatar">${avatar}</div>
       <div class="node-name">${person.nombre} ${person.apellidos}</div>
       <div class="node-info">${birthYear}${deathYear}</div>
     </div>
   `;
   
-  // Permitir click si tiene hijos (expandir/colapsar)
   if (hasChildren) {
     node.style.cursor = 'pointer';
     node.onclick = (e) => {
       e.stopPropagation();
       
-      // Toggle estado expandido
       if (expandedNodes.has(coupleId)) {
         expandedNodes.delete(coupleId);
         expandedNodes.delete(person.id);
@@ -709,13 +670,11 @@ function createConnector(x1, y1, x2, y2) {
   line.style.zIndex = '1';
   
   if (x1 === x2) {
-    // Línea vertical
     line.style.left = x1 + 'px';
     line.style.top = Math.min(y1, y2) + 'px';
     line.style.width = '2px';
     line.style.height = Math.abs(y2 - y1) + 'px';
   } else {
-    // Línea horizontal
     line.style.left = Math.min(x1, x2) + 'px';
     line.style.top = y1 + 'px';
     line.style.width = Math.abs(x2 - x1) + 'px';
