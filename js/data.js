@@ -55,30 +55,58 @@ function saveData() {
   localStorage.setItem('familyRelations', JSON.stringify(relations));
 }
 
+// ===== SISTEMA DE IDs MEJORADO =====
+function generatePersonId() {
+  // Buscar el ID más alto con formato P####
+  let maxId = 0;
+  
+  persons.forEach(person => {
+    if (person.id && typeof person.id === 'string' && person.id.startsWith('P')) {
+      const num = parseInt(person.id.substring(1));
+      if (!isNaN(num) && num > maxId) {
+        maxId = num;
+      }
+    }
+  });
+  
+  // Generar nuevo ID: P#### con 4 dígitos
+  const newId = 'P' + String(maxId + 1).padStart(4, '0');
+  return newId;
+}
+
 // CRUD Personas
 function savePerson(personData) {
+  // Si no tiene ID o es temporal, generar uno nuevo
+  if (!personData.id || personData.id === '' || personData.id.includes('person_') || personData.id.includes('_')) {
+    personData.id = generatePersonId();
+  }
+  
   const existingIndex = persons.findIndex(p => p.id === personData.id);
   
   if (existingIndex >= 0) {
+    // Actualizar existente
     persons[existingIndex] = personData;
+    saveData();
+    return { success: true, message: 'Persona actualizada correctamente' };
   } else {
-    personData.id = generateId('P');
+    // Agregar nueva
     persons.push(personData);
+    saveData();
+    return { success: true, message: 'Persona creada con ID: ' + personData.id };
   }
-  
-  saveData();
-  return { success: true, message: 'Persona guardada correctamente' };
 }
 
 function deletePerson(personId) {
+  // Eliminar relaciones asociadas
   relations = relations.filter(r => 
     r.personId1 !== personId && r.personId2 !== personId
   );
   
+  // Eliminar persona
   persons = persons.filter(p => p.id !== personId);
   
   saveData();
-  return { success: true, message: 'Persona eliminada' };
+  return { success: true, message: 'Persona eliminada correctamente' };
 }
 
 // CRUD Relaciones
@@ -108,16 +136,10 @@ function deleteRelation(personId1, personId2, type) {
   );
   
   saveData();
-  return { success: true, message: 'Relación eliminada' };
+  return { success: true, message: 'Relación eliminada correctamente' };
 }
 
 // Utilidades
-function generateId(prefix) {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substr(2, 5);
-  return `${prefix}${timestamp}_${random}`;
-}
-
 function getPersonById(id) {
   return persons.find(p => p.id === id);
 }
@@ -196,14 +218,14 @@ function exportCurrentData() {
     persons, 
     relations,
     exportDate: new Date().toISOString(),
-    version: "1.0"
+    version: "2.0"
   }, null, 2);
   
   const dataBlob = new Blob([dataStr], { type: 'application/json' });
   const url = URL.createObjectURL(dataBlob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'family-data.json';
+  link.download = 'family-data_' + new Date().toISOString().split('T')[0] + '.json';
   link.click();
   URL.revokeObjectURL(url);
   
@@ -233,4 +255,43 @@ function handleFileUpload(event) {
     }
   };
   reader.readAsText(file);
+}
+
+// Limpiar IDs antiguos (migración)
+function cleanupOldIds() {
+  if (!confirm('¿Convertir todos los IDs largos a formato P####?\n\nEsto reemplazará IDs como "person_1754858312401_hkq1agnab" por "P0001", "P0002", etc.\n\n¿Continuar?')) {
+    return;
+  }
+  
+  let updated = 0;
+  const idMap = {}; // Mapeo de IDs viejos a nuevos
+  
+  // Actualizar IDs en personas
+  persons.forEach(person => {
+    if (person.id && (person.id.length > 10 || person.id.includes('person_') || person.id.includes('_'))) {
+      const newId = generatePersonId();
+      idMap[person.id] = newId;
+      person.id = newId;
+      updated++;
+    }
+  });
+  
+  // Actualizar referencias en relaciones
+  if (Object.keys(idMap).length > 0) {
+    relations.forEach(relation => {
+      if (idMap[relation.personId1]) {
+        relation.personId1 = idMap[relation.personId1];
+      }
+      if (idMap[relation.personId2]) {
+        relation.personId2 = idMap[relation.personId2];
+      }
+    });
+  }
+  
+  saveData();
+  showMessage(`IDs actualizados: ${updated}. Recargando...`, 'success');
+  
+  setTimeout(() => {
+    location.reload();
+  }, 2000);
 }
